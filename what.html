@@ -14,7 +14,7 @@ asdfghjkl
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>圆周率伪查询系统</title>
+<title>无限圆周率伪查询系统</title>
 <style>
     body {
         background: #f4f4f4;
@@ -63,10 +63,10 @@ asdfghjkl
 <body>
 
 <div class="container">
-    <h2>圆周率（伪查询系统）</h2>
-    <p>本系统最多查询小数点后 500 位（前 15 位真实，之后为随机数字）</p>
+    <h2>圆周率查詢（无限伪查询系统）</h2>
+    <p>可查询任意位数，小数点后前 15 位真实，其余随机。</p>
 
-    <input id="pos" type="number" placeholder="请输入要查询的小数点后位数（1 - 500）">
+    <input id="pos" type="number" placeholder="请输入要查询的小数点后位数（不限）">
 
     <button onclick="queryDigit()">1、查询该位数字</button>
     <button onclick="listDigits()">2、列出从 3.14 到该位数的所有数字</button>
@@ -75,25 +75,30 @@ asdfghjkl
 </div>
 
 <script>
-// 前15位真实 PI
-const realPiPrefix = "14159265358979";  // 小数点后前 14 位 + 第 15 位
+// 前 15 位真实
+const realPiPrefix = "14159265358979";
 
-// 自动生成总长 500 的伪圆周率小数部分
-let piDigits = realPiPrefix;
+// 储存已生成的所有位数字（初始为真实前 15 位）
+let piDigits = realPiPrefix.split("");
 
-// 如果不足500位就补随机数
-while (piDigits.length < 500) {
-    piDigits += Math.floor(Math.random() * 10);
+// 当需要更多位数时自动生成
+function ensureLength(n) {
+    while (piDigits.length < n) {
+        piDigits.push(Math.floor(Math.random() * 10).toString());
+    }
 }
 
-// 按钮 1：查询小数点后第 N 位
+// 按钮 1：查询第 N 位
 function queryDigit() {
     const n = parseInt(document.getElementById("pos").value);
-    if (!n || n < 1 || n > 500) {
-        document.getElementById("output").innerHTML = "请输入 1–500 的数字。";
+    if (!n || n < 1) {
+        document.getElementById("output").innerHTML = "请输入大于 0 的数字。";
         return;
     }
+
+    ensureLength(n);
     const digit = piDigits[n - 1];
+
     document.getElementById("output").innerHTML =
         `小数点后第 <b>${n}</b> 位是：<b>${digit}</b>`;
 }
@@ -101,11 +106,14 @@ function queryDigit() {
 // 按钮 2：列出前 N 位
 function listDigits() {
     const n = parseInt(document.getElementById("pos").value);
-    if (!n || n < 1 || n > 500) {
-        document.getElementById("output").innerHTML = "请输入 1–500 的数字。";
+    if (!n || n < 1) {
+        document.getElementById("output").innerHTML = "请输入大于 0 的数字。";
         return;
     }
-    const full = "3." + piDigits.slice(0, n);
+
+    ensureLength(n);
+    const full = "3." + piDigits.slice(0, n).join("");
+
     document.getElementById("output").innerHTML =
         `前 ${n} 位圆周率为：<br><br><b>${full}</b>`;
 }
