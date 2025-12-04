@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>圆周率伪查询系统</title>
+<style>
+    body {
+        background: #f4f4f4;
+        font-family: "微软雅黑", sans-serif;
+        padding: 40px;
+    }
+    .container {
+        max-width: 600px;
+        margin: auto;
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 0 20px rgba(0,0,0,.1);
+    }
+    h2 { text-align: center; }
+    input {
+        width: 100%;
+        padding: 10px;
+        font-size: 18px;
+        margin-top: 10px;
+        border-radius: 6px;
+        border: 1px solid #aaa;
+    }
+    button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 15px;
+        background: #0078ff;
+        border: none;
+        color: white;
+        font-size: 18px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    button:hover { background: #005ec4; }
+    .result {
+        margin-top: 20px;
+        padding: 15px;
+        background: #eef;
+        border-radius: 6px;
+        font-size: 18px;
+        word-break: break-all;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>圆周率（伪查询系统）</h2>
+    <p>本系统最多查询小数点后 500 位（前 15 位真实，之后为随机数字）</p>
+
+    <input id="pos" type="number" placeholder="请输入要查询的小数点后位数（1 - 500）">
+
+    <button onclick="queryDigit()">1、查询该位数字</button>
+    <button onclick="listDigits()">2、列出从 3.14 到该位数的所有数字</button>
+
+    <div id="output" class="result"></div>
+</div>
+
+<script>
+// 前15位真实 PI
+const realPiPrefix = "14159265358979";  // 小数点后前 14 位 + 第 15 位
+
+// 自动生成总长 500 的伪圆周率小数部分
+let piDigits = realPiPrefix;
+
+// 如果不足500位就补随机数
+while (piDigits.length < 500) {
+    piDigits += Math.floor(Math.random() * 10);
+}
+
+// 按钮 1：查询小数点后第 N 位
+function queryDigit() {
+    const n = parseInt(document.getElementById("pos").value);
+    if (!n || n < 1 || n > 500) {
+        document.getElementById("output").innerHTML = "请输入 1–500 的数字。";
+        return;
+    }
+    const digit = piDigits[n - 1];
+    document.getElementById("output").innerHTML =
+        `小数点后第 <b>${n}</b> 位是：<b>${digit}</b>`;
+}
+
+// 按钮 2：列出前 N 位
+function listDigits() {
+    const n = parseInt(document.getElementById("pos").value);
+    if (!n || n < 1 || n > 500) {
+        document.getElementById("output").innerHTML = "请输入 1–500 的数字。";
+        return;
+    }
+    const full = "3." + piDigits.slice(0, n);
+    document.getElementById("output").innerHTML =
+        `前 ${n} 位圆周率为：<br><br><b>${full}</b>`;
+}
+</script>
+
+</body>
+</html>
