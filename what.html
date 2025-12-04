@@ -14,62 +14,89 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>无限圆周率查询系统</title>
+<title>圆周率娱乐伪查询系统</title>
 <style>
     body {
-        background: #f4f4f4;
-        font-family: "微软雅黑", sans-serif;
+        background: #0d0d0d;
+        color: #eee;
+        font-family: "Consolas", "微软雅黑", sans-serif;
         padding: 40px;
     }
     .container {
-        max-width: 600px;
+        max-width: 700px;
         margin: auto;
-        background: white;
+        background: rgba(20,20,20,0.8);
         padding: 25px;
         border-radius: 12px;
-        box-shadow: 0 0 20px rgba(0,0,0,.1);
+        box-shadow: 0 0 25px rgba(0,255,100,.3);
+        border: 1px solid rgba(0,255,100,.4);
     }
-    h2 { text-align: center; }
+    h2 { text-align: center; text-shadow: 0 0 8px #0f0; }
     input {
         width: 100%;
         padding: 10px;
         font-size: 18px;
         margin-top: 10px;
         border-radius: 6px;
-        border: 1px solid #aaa;
+        border: 1px solid #0f0;
+        background: rgba(0,0,0,0.6);
+        color: #0f0;
     }
     button {
         width: 100%;
         padding: 10px;
         margin-top: 15px;
-        background: #0078ff;
+        background: #0a0;
         border: none;
         color: white;
         font-size: 18px;
         border-radius: 6px;
         cursor: pointer;
     }
-    button:hover { background: #005ec4; }
+    button:hover { background: #070; }
     .result {
         margin-top: 20px;
         padding: 15px;
-        background: #eef;
+        background: rgba(0,20,0,0.5);
         border-radius: 6px;
         font-size: 18px;
         word-break: break-all;
+        border: 1px solid #0f0;
+    }
+
+    /* 黑客流动动画 */
+    @keyframes hackerFlow {
+        0% { text-shadow: 0 0 2px #0f0; color: #0f0; }
+        50% { text-shadow: 0 0 15px #0f0; color: #9f9; }
+        100% { text-shadow: 0 0 2px #0f0; color: #0f0; }
+    }
+    .hacker {
+        animation: hackerFlow 0.8s infinite;
+    }
+
+    /* 页面“失控”效果 */
+    .glitch {
+        animation: glitch 0.25s infinite;
+    }
+    @keyframes glitch {
+        0% { transform: translate(0,0); }
+        25% { transform: translate(-3px,2px); }
+        50% { transform: translate(2px,-3px); }
+        75% { transform: translate(-2px,-1px); }
+        100% { transform: translate(0,0); }
     }
 </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>圆周率查詢（无限查询系统）</h2>
-    <p>可查询任意位数。</p>
+<div class="container" id="mainBox">
+    <h2>圆周率 无限娱乐伪查询系统</h2>
+    <p>小数点后前 15 位真实，其余随机｜查越深越奇怪 😎</p>
 
-    <input id="pos" type="number" placeholder="请输入要查询的小数点后位数（不限）">
+    <input id="pos" type="number" placeholder="请输入小数点后位数，不限范围">
 
     <button onclick="queryDigit()">1、查询该位数字</button>
-    <button onclick="listDigits()">2、列出从 3.14 到该位数的所有数字</button>
+    <button onclick="listDigits()">2、列出前 N 位数字</button>
 
     <div id="output" class="result"></div>
 </div>
@@ -77,45 +104,103 @@
 <script>
 // 前 15 位真实
 const realPiPrefix = "14159265358979";
-
-// 储存已生成的所有位数字（初始为真实前 15 位）
 let piDigits = realPiPrefix.split("");
 
-// 当需要更多位数时自动生成
+// 1️⃣ 智慧语录
+const wisdom = [
+    "数字是宇宙的语言，而你正在与它对话。",
+    "在无限中寻找答案，你已经超越了数学。",
+    "每一位圆周率都像是宇宙给你的暗示。",
+    "你查的不是圆周率，你查的是命运。",
+    "当你凝视数字时，数字也在凝视你。"
+];
+
+// 3️⃣ 吐槽语句
+const roast = [
+    "你… 真的很闲吧？",
+    "你这是在跟我较劲吗？",
+    "你查的这个位数… 强迫症都被你治好了。",
+    "我开始怀疑你是不是在用我进行某种仪式。",
+    "等等，我需要一点时间深呼吸… 好了。继续吧。"
+];
+
+// 5️⃣ “你知道吗？”圆周率知识
+const facts = [
+    "π 是无理数，没有任何重复循环。",
+    "π 已经被计算到超过 100 兆位以上。",
+    "古巴比伦人最早将 π 近似为 3.125。",
+    "在 π 中，可以找到几乎所有数字序列。",
+    "π 的前六位 3.14159 在科学界被称作 Feynman point。"
+];
+
+// 自动补足随机数字
 function ensureLength(n) {
     while (piDigits.length < n) {
         piDigits.push(Math.floor(Math.random() * 10).toString());
     }
 }
 
-// 按钮 1：查询第 N 位
+// 黑客数字闪屏
+function hackerEffect(text) {
+    return `<span class="hacker">${text}</span>`;
+}
+
+// 主查询
 function queryDigit() {
     const n = parseInt(document.getElementById("pos").value);
     if (!n || n < 1) {
-        document.getElementById("output").innerHTML = "请输入大于 0 的数字。";
+        output.innerHTML = "请输入大于 0 的数字。";
         return;
     }
 
     ensureLength(n);
-    const digit = piDigits[n - 1];
 
-    document.getElementById("output").innerHTML =
-        `小数点后第 <b>${n}</b> 位是：<b>${digit}</b>`;
+    let digit = piDigits[n - 1];
+
+    // 3️⃣ 若数字太大 → 吐槽
+    let extra = "";
+    if (n > 10000 && n <= 200000) {
+        extra = "<br><br><i>" + roast[Math.floor(Math.random()*roast.length)] + "</i>";
+    }
+
+    // 8️⃣ 若数字非常大 → 页面“失控”
+    if (n > 200000) {
+        document.getElementById("mainBox").classList.add("glitch");
+        extra = "<br><br><b>⚠ 系统警告：数字太深，我开始看到我不该看到的东西…</b>";
+    }
+
+    // 1️⃣ + 5️⃣ 加智慧语录与知识
+    const msg =
+        `小数点后第 <b>${n}</b> 位是：${hackerEffect("<b>"+digit+"</b>")}<br><br>` +
+        `<i>✨ ${wisdom[Math.floor(Math.random()*wisdom.length)]}</i><br>` +
+        `<i>📘 你知道吗：${facts[Math.floor(Math.random()*facts.length)]}</i>` +
+        extra;
+
+    output.innerHTML = msg;
 }
 
-// 按钮 2：列出前 N 位
 function listDigits() {
     const n = parseInt(document.getElementById("pos").value);
     if (!n || n < 1) {
-        document.getElementById("output").innerHTML = "请输入大于 0 的数字。";
+        output.innerHTML = "请输入大于 0 的数字。";
         return;
     }
 
     ensureLength(n);
-    const full = "3." + piDigits.slice(0, n).join("");
 
-    document.getElementById("output").innerHTML =
-        `前 ${n} 位圆周率为：<br><br><b>${full}</b>`;
+    let full = "3." + piDigits.slice(0, n).join("");
+
+    let msg =
+        `前 ${n} 位圆周率为：<br><br>${hackerEffect("<b>"+full+"</b>")}<br><br>` +
+        `<i>✨ ${wisdom[Math.floor(Math.random()*wisdom.length)]}</i>`;
+
+    // 大位数触发“系统异常”
+    if (n > 200000) {
+        document.getElementById("mainBox").classList.add("glitch"); 
+        msg += `<br><br><b>⚠ 数字太多了…我开始不稳定了…</b>`;
+    }
+
+    output.innerHTML = msg;
 }
 </script>
 
