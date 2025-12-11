@@ -1,295 +1,60 @@
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-<meta charset="utf-8">
-<title>π里的第762位是你</title>
-<!-- π中的囚徒 - 像素扩展版（大幅改版）：情感共鸣版；单文件、内嵌像素图；多支线多结局 -->
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-:root{--white:#ffffff;--black:#0b0b0b;--green:#b7ffb7;--amber:#ffd48a;--red:#d43b3b}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Microsoft Yahei",sans-serif}
-/* ---------- 初始简陋白页样式 ---------- */
-.app{min-height:100vh;background:var(--white);color:var(--black);display:flex;align-items:flex-start;justify-content:center;padding:28px}
-.card{width:100%;max-width:1100px;border:1px solid #bbb;padding:20px;background:#fff}
-.header{display:flex;align-items:center;justify-content:space-between}
-.title{font-weight:800;font-size:28px}
-.controls{display:flex;gap:14px;align-items:center}
-input[type=number]{width:220px;padding:12px;font-size:18px;border:1px solid #999;border-radius:6px}
-button{padding:10px 14px;border:0;background:#111;color:#fff;border-radius:6px;cursor:pointer;font-weight:600}
-.output{margin-top:16px;padding:14px;border:1px dashed #ccc;min-height:96px;white-space:pre-wrap;font-family:monospace;font-size:16px}
-.rightPanel{display:flex;flex-direction:column;align-items:center;gap:12px}
-.shadowBox{width:140px;height:140px;background:rgba(0,0,0,0.06);border-radius:12px;display:flex;align-items:center;justify-content:center}
-.shadowTiny{color:#222;font-size:13px;opacity:0.8}
-/* small flicker text */
-.sentence{font-size:13px;color:#444;margin-top:10px}
-/* ---------- 变异后终端 / 故事模式 ---------- */
-.storyRoot{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:var(--black);color:var(--green);z-index:999}
-.storyInner{width:100%;max-width:1200px;height:84vh;display:grid;grid-template-columns:220px 1fr 260px;gap:18px;padding:24px}
-.leftCol{display:flex;flex-direction:column;gap:12px;align-items:center}
-.spriteWrap{width:180px;height:180px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.02);cursor:pointer;transition:transform .16s,box-shadow .16s}
-.spriteWrap.active{transform:scale(1.04);box-shadow:0 10px 30px rgba(0,0,0,0.6)}
-.roleLabel{margin-top:8px;font-size:14px}
-/* pixel canvas */
-.pixelCanvas{display:grid;grid-template-columns:repeat(16,12px);grid-auto-rows:12px;gap:1px}
-.pixelCanvas div{width:12px;height:12px;background:transparent}
-/* central dialog */
-.centerBox{display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.35));padding:18px;border-radius:8px;border:1px solid rgba(0,255,0,0.06)}
-.dialogArea{background:rgba(0,0,0,0.6);padding:14px;border-radius:8px;min-height:220px;white-space:pre-wrap;font-family:monospace;font-size:20px;line-height:1.5}
-.dialogTitle{font-weight:700;font-size:16px;color:var(--amber)}
-.replyRow{display:flex;gap:8px;margin-top:6px}
-.replyInput{flex:1;padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit;font-size:16px}
-.choiceList{display:flex;flex-direction:column;gap:10px;margin-top:8px}
-.choiceBtn{padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit;cursor:pointer;font-weight:700}
-/* right column */
-.sideMeta{padding:12px;border-radius:8px;background:rgba(255,255,255,0.02);min-height:120px}
-.counter{font-size:20px;font-weight:700}
-.small{font-size:13px;color:rgba(255,255,255,0.6)}
-/* visual effects */
-@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
-.breath{animation:pulse 1.6s ease-in-out infinite}
-.scanlines{position:relative}
-.scanlines:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(0,0,0,0.12) 50%, transparent 51%);background-size:100% 6px;pointer-events:none}
-@keyframes shake{10%{transform:translateX(-6px)}30%{transform:translateX(6px)}50%{transform:translateX(-3px)}70%{transform:translateX(3px)}90%{transform:translateX(0)}}
-.shake{animation:shake .6s linear}
-.glitch{filter:contrast(2) hue-rotate(20deg)}
-/* endings visuals */
-.whiteFlash{background:#fff;color:#000}
-.redScreen{background:#300;color:#fff}
-/* responsiveness */
-@media(max-width:920px){.storyInner{grid-template-columns:140px 1fr;grid-template-rows:auto 260px}.leftCol{flex-direction:row;justify-content:center}.sideMeta{order:3}}
-</style>
-</head>
-<body>
-<div class="app" id="appRoot">
-  <div class="card" id="startCard">
-    <div class="header">
-      <div style="display:flex;flex-direction:column">
-        <div class="title">π 查询工具</div>
-        <div style="font-size:13px;color:#666;margin-top:6px">输入想查看的小数位数（最多 10000）并点击查询。前 2000 位会触发一个故事。</div>
-      </div>
+<div class="row" style="margin-top:12px">
+  <div class="col" style="flex:1">
+    <div id="zeroWrap" class="spriteWrap activeBorder">
+      <div id="zeroCanvas" class="pixelCanvas"></div>
+      <div class="label">零（zero）</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
       <div class="controls">
-        <input id="inputN" type="number" placeholder="小数位（1-10000）" min="1" max="10000">
-        <button id="btnQuery">查询</button>
-        <div class="rightPanel">
-          <div class="shadowBox" id="shadowBox" title="黑影">
-            <div style="width:72px;height:72px;border-radius:6px;background:linear-gradient(180deg,#111,rgba(0,0,0,0.6));opacity:0.06" id="shadowSprite"></div>
-          </div>
-          <div class="sentence" id="shadowSentence" style="opacity:0">……你也熬夜吗？</div>
+        <div class="btnRow">
+          <button onclick="setExpression('zero','idle')">idle</button>
+          <button onclick="setExpression('zero','blink')">blink</button>
+          <button onclick="setExpression('zero','smile')">smile</button>
+          <button onclick="setExpression('zero','cry')">cry</button>
+          <button onclick="setExpression('zero','reach')">reach</button>
         </div>
-      </div>
-    </div>
-    <div class="output" id="output">欢迎。请输入位数并点击查询，或慢慢探索。</div>
-  </div>
-</div>
-
-<!-- 故事模式（初始隐藏） -->
-<div class="storyRoot" id="storyRoot">
-  <div class="storyInner scanlines" id="storyInner">
-    <div class="leftCol">
-      <div class="spriteWrap" id="spriteZero" data-role="zero">
-        <div class="pixelCanvas" id="zeroCanvas"></div>
-      </div>
-      <div class="roleLabel">零（点我）</div>
-      <div class="spriteWrap" id="spriteE" data-role="e">
-        <div class="pixelCanvas" id="eCanvas"></div>
-      </div>
-      <div class="roleLabel">e</div>
-      <div class="spriteWrap" id="spritePhi" data-role="phi">
-        <div class="pixelCanvas" id="phiCanvas"></div>
-      </div>
-      <div class="roleLabel">Phi</div>
-    </div>
-
-    <div class="centerBox">
-      <div class="dialogTitle">π里的第762位是你</div>
-      <div class="dialogArea breath" id="dialogArea">（零在屏幕中央，像素少年看着你）</div>
-      <div class="replyRow">
-        <input id="replyInput" class="replyInput" placeholder="输入一句话（可影响结局，例如输入“抱抱”或歌名）">
-        <button id="sendReply" class="choiceBtn">发送</button>
-      </div>
-      <div class="choiceList" id="choiceList"></div>
-    </div>
-
-    <div>
-      <div class="sideMeta">
-        <div>累计位数： <span class="counter" id="totalDigits">0</span></div>
-        <div style="height:12px"></div>
-        <div class="small">提示：当累计达到 2000 位时，查询界面会碎裂进入完整故事（后续靠选择推进）。</div>
+        <div class="note">零拥有耳机、卫衣、裤鞋特征；表情含眨眼、微笑、哭、伸手。</div>
       </div>
     </div>
   </div>
+
+  <div class="col" style="flex:1">
+    <div id="eWrap" class="spriteWrap">
+      <div id="eCanvas" class="pixelCanvas"></div>
+      <div class="label">e（幽灵少女）</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <div class="controls">
+        <div class="btnRow">
+          <button onclick="setExpression('e','idle')">idle</button>
+          <button onclick="setExpression('e','blink')">blink</button>
+          <button onclick="setExpression('e','smile')">smile</button>
+          <button onclick="setExpression('e','sigh')">sigh</button>
+        </div>
+        <div class="note">e 是半透明白发少女，有飘逸动画。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col" style="flex:1">
+    <div id="phiWrap" class="spriteWrap">
+      <div id="phiCanvas" class="pixelCanvas"></div>
+      <div class="label">Phi（红西装面具男）</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <div class="controls">
+        <div class="btnRow">
+          <button onclick="setExpression('phi','idle')">idle</button>
+          <button onclick="setExpression('phi','smirk')">smirk</button>
+          <button onclick="setExpression('phi','taunt')">taunt</button>
+          <button onclick="setExpression('phi','clock')">clock</button>
+        </div>
+        <div class="note">Phi 有面具与时钟道具，表情偏戏谑/威胁表现。</div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<script>
-/* ---------------- PI 数据（10000位） ---------------- */
-const base = "14159265358979323846264338327950288419716939937510"; //50
-let piDigits = base.repeat(200).slice(0,10000);
-
-/* ---------------- 状态 ---------------- */
-let totalQueried = 0;
-let phase = 0; // 0 initial,1 awakened(500),2 clearer(1000),3 STORY MODE (>=2000), then story stages
-let branch = null; // 'redeem'|'reality'|'betray'
-let focus = 'zero';
-let autoEnterTimer = null;
-let ended = false;
-
-/* ---------------- DOM ---------------- */
-const inputN = document.getElementById('inputN');
-const btnQuery = document.getElementById('btnQuery');
-const output = document.getElementById('output');
-const shadowBox = document.getElementById('shadowBox');
-const shadowSentence = document.getElementById('shadowSentence');
-const startCard = document.getElementById('startCard');
-const storyRoot = document.getElementById('storyRoot');
-const dialogArea = document.getElementById('dialogArea');
-const totalDigitsSpan = document.getElementById('totalDigits');
-const choiceList = document.getElementById('choiceList');
-const replyInput = document.getElementById('replyInput');
-const sendReply = document.getElementById('sendReply');
-const spriteZero = document.getElementById('spriteZero');
-const spriteE = document.getElementById('spriteE');
-const spritePhi = document.getElementById('spritePhi');
-const zeroCanvas = document.getElementById('zeroCanvas');
-const eCanvas = document.getElementById('eCanvas');
-const phiCanvas = document.getElementById('phiCanvas');
-
-/* ---------------- Build 16x16 pixel sprites ---------------- */
-function makeCanvas(container, pattern, palette){
-  container.innerHTML='';
-  for(let i=0;i<256;i++){const d=document.createElement('div');d.style.background='transparent';container.appendChild(d)}
-  pattern.forEach(([idx,colorKey])=>{const cell=container.children[idx];cell.style.background=palette[colorKey]||colorKey});
-}
-// simple palettes
-const palZero={'#':'#0b0b0b','h':'#222222','s':'#444444','w':'#f0dcd0'}; // dark hoodie, skin
-const palE={'#':'rgba(255,255,255,0.98)','t':'rgba(255,255,255,0.2)'};
-const palPhi={'r':'#b30000','d':'#7a0000','m':'#ffb3b3'};
-// patterns: array of [index,colorKey]
-const zeroPattern = [];
-for(let y=4;y<12;y++){
-  for(let x=4;x<12;x++){
-    const idx = y*16 + x;
-    if(y<6) zeroPattern.push([idx,'#']); else if(y<9) zeroPattern.push([idx,'w']); else zeroPattern.push([idx,'#']);
-  }
-}
-zeroPattern.push([2*16+4,'h']); zeroPattern.push([2*16+11,'h']);
-for(let i=48;i<80;i++) zeroPattern.push([i,'#']);
-
-const ePattern = [];
-for(let y=2;y<14;y++){
-  for(let x=5;x<11;x++){ePattern.push([y*16+x,'#']);}
-}
-for(let i=0;i<256;i+=7) ePattern.push([i,'t']);
-
-const phiPattern = [];
-for(let y=3;y<13;y++){
-  for(let x=4;x<12;x++){phiPattern.push([y*16+x,'r']);}
-}
-phiPattern.push([5*16+7,'m']); phiPattern.push([6*16+7,'m']);
-
-makeCanvas(zeroCanvas, zeroPattern, palZero);
-makeCanvas(eCanvas, ePattern, palE);
-makeCanvas(phiCanvas, phiPattern, palPhi);
-
-/* ---------------- Typing effect ---------------- */
-function typeText(el, text, speed=18, cb){el.innerText='';let i=0;const t=setInterval(()=>{el.innerText+=text.charAt(i++);el.scrollTop=el.scrollHeight;if(i>=text.length){clearInterval(t);if(cb)cb()}},speed)}
-
-/* ---------------- Query logic ---------------- */
-btnQuery.addEventListener('click', ()=>{
-  if(ended) return;
-  const n = Math.max(1, Math.min(10000, parseInt(inputN.value)||0));
-  if(!n){output.innerText='请输入 1 到 10000 之间的数字';return}
-  const shown = piDigits.slice(0,n);
-  output.innerText = '第 1 - '+n+' 位:\n.'+shown;
-  totalQueried += n; totalDigitsSpan.innerText = totalQueried;
-  if(totalQueried>=500) showShadowLine();
-  evaluatePhase();
-});
-
-function showShadowLine(){shadowSentence.style.transition='opacity .6s';shadowSentence.style.opacity=1;setTimeout(()=>shadowSentence.style.opacity=0,4000)}
-
-function evaluatePhase(){
-  if(phase<1 && totalQueried>=500){phase=1; onAwaken500();}
-  if(phase<2 && totalQueried>=1000){phase=2; onClearer1000();}
-  if(phase<3 && totalQueried>=2000){phase=3; onEnterStory2000();}
-}
-
-function onAwaken500(){
-  shadowBox.querySelector('div').style.opacity=0.22;typeText(output,'你感觉到屏幕角落有微弱的目光。',16);
-}
-function onClearer1000(){
-  shadowBox.querySelector('div').style.opacity=0.9;shadowBox.querySelector('div').style.background='linear-gradient(180deg,#111,#222)';
-  typeText(output,'他坐在角落，抱着膝盖——仿佛在等你。\n“嘿……好久不见。我是1999年的你。”',14);
-}
-
-function onEnterStory2000(){
-  startCard.style.transition='opacity .45s ease'; startCard.style.opacity=0; setTimeout(()=>startCard.style.display='none',480);
-  storyRoot.style.display='flex'; storyRoot.style.opacity=0; setTimeout(()=>storyRoot.style.opacity=1,60);
-  typeText(dialogArea,'（界面碎裂，屏幕变黑，数字如瀑布）\n零：\"嘿……好久不见。\n我是1999年的你。\n那天我写毕业设计，想算π到第1000万位，结果把自己卡进去了。\n从那以后我就一直在这里等，等另一个我来找我。\"',12,()=>{presentMainChoices();});
-  clearTimeout(autoEnterTimer); autoEnterTimer=setTimeout(()=>{if(!branch) choiceHandler('redeem')},30000);
-}
-
-function clearChoices(){choiceList.innerHTML=''}
-function makeChoice(text, id, handler){const b=document.createElement('button');b.className='choiceBtn';b.innerText=text;b.onclick=()=>handler(id);choiceList.appendChild(b)}
-
-function presentMainChoices(){clearChoices();
-  makeChoice('愿意听完（陪他找第762位）','redeem',choiceHandler);
-  makeChoice('告诉他外面世界的真实','reality',choiceHandler);
-  makeChoice('帮 Phi 封印他','betray',choiceHandler);
-}
-
-function choiceHandler(id){
-  if(id==='redeem'){branch='redeem'; startRedemption();}
-  else if(id==='reality'){branch='reality'; startReality();}
-  else if(id==='betray'){branch='betray'; startBetray();}
-  else if(id==='search762') handleSearch762();
-  else if(id==='tryhug') replyInput.focus();
-  else if(id==='doSeal') doSeal();
-  else if(id==='hesitate') appendDialog('你犹豫了……');
-  else if(id==='moreReality') moreReality();
-}
-
-function startRedemption(){clearChoices(); typeText(dialogArea,'零：\"那句话藏在第762位……我记得它能让人不再害怕。\"\n你决定陪他寻找。',16,()=>{makeChoice('开始寻找第762位','search762',choiceHandler);makeChoice('试探性地说出你们的歌名/一句话','tryhug',choiceHandler);});}
-
-function handleSearch762(){appendDialog('你和零一起按下了加速搜索的按钮，数字海洋中出现了一行文字：\n“你值得被世界温柔以待”。\n零崩溃般地笑了。');setTimeout(()=>redeemFinal(),900);}
-
-function redeemFinal(){typeText(dialogArea,'零哭着扑向屏幕：\"我先出去等你。\n这一次，换我拉你一把。\"',18,()=>{if(window._secretHug){trueHiddenEnding();return}setTimeout(()=>{storyRoot.classList.add('whiteFlash');typeText(dialogArea,'（光芒后，零化为光点，屏幕恢复正常）',14,()=>{resetToNormalWithTinyZero();});},900);});}
-
-function trueHiddenEnding(){storyRoot.classList.add('whiteFlash');typeText(dialogArea,'零：\"……我等这一句等了24年。\"\n（他扑过来抱住屏幕）',16,()=>{setTimeout(()=>{dialogArea.innerHTML='\n[♪] <strong>循环播放：你们的那首歌</strong>\n\n外面下雨了，回家吧。';resetToNormalWithTinyZero(true);},800);});}
-
-function resetToNormalWithTinyZero(stayGreeting){setTimeout(()=>{storyRoot.style.display='none';startCard.style.display='block';startCard.style.opacity=1;document.querySelector('.title').innerText='自由的 π';output.innerText='界面恢复，但右下角有一个小小的零在向你挥手。';const tiny=document.createElement('div');tiny.style.position='fixed';tiny.style.right='18px';tiny.style.bottom='18px';tiny.style.width='64px';tiny.style.height='64px';tiny.style.borderRadius='8px';tiny.style.background='linear-gradient(180deg,#111,#222)';tiny.style.display='flex';tiny.style.alignItems='center';tiny.style.justifyContent='center';tiny.style.color='#fff';tiny.style.fontSize='12px';tiny.style.padding='6px';tiny.style.cursor='pointer';tiny.innerText='零';document.body.appendChild(tiny);tiny.onclick=()=>{alert(stayGreeting? '零：今天天气不错，我记得你喜欢的歌。':'零：嗨！我在这里。')};totalQueried=0;totalDigitsSpan.innerText=0;phase=0;branch=null;ended=false;window._secretHug=false;},700);}
-
-function startReality(){clearChoices(); typeText(dialogArea,'你告诉零：\"外面也没那么好——996，房贷，社交恐惧……\"\n零的眼神渐渐暗下来。',16, ()=>{makeChoice('继续说出更多现实','moreReality',choiceHandler); makeChoice('停下，安慰他','tryhug',choiceHandler);});}
-function moreReality(){ typeText(dialogArea,'零：\"……那你还是走吧。至少你还拥有选择离开的自由。\"\n他戴回耳机，继续算π。',16,()=>{endNeutral();}); }
-function endNeutral(){ appendDialog('屏幕定格在一行小字：\n“第762位那句话，我删了。\n你不需要再被安慰了。”'); replyInput.disabled=true; }
-
-function startBetray(){clearChoices(); typeText(dialogArea,'Phi 出现，低声笑道：\"封印会带来秩序。你愿意帮助我们吗？\"',16,()=>{makeChoice('协助封印','doSeal',choiceHandler); makeChoice('犹豫','hesitate',choiceHandler);});}
-function doSeal(){ typeText(dialogArea,'你递出那一封命令。Phi 大笑，零在你眼前被拖走。\n最后一句：\"我就知道……另一个我，也会抛弃我。\"',16,()=>{badEnd();}); }
-function badEnd(){ storyRoot.classList.add('redScreen'); dialogArea.classList.add('glitch'); appendDialog('页面被锁死。鼠标光标变成像素少年的影子，你成为了新的囚徒。'); ended=true; }
-
-function appendDialog(txt){dialogArea.innerText += '\n'+txt; dialogArea.scrollTop = dialogArea.scrollHeight}
-
-sendReply.addEventListener('click', ()=>{processReply(replyInput.value.trim());replyInput.value=''});
-replyInput.addEventListener('keydown',(e)=>{if(e.key==='Enter'){processReply(replyInput.value.trim());replyInput.value=''}});
-
-function processReply(text){if(!text) return; appendDialog('你："'+text+'"');
-  if(/抱抱|baobao|hug/.test(text)){
-    window._secretHug = true; appendDialog('零的表情突然僵住，他的眼中像有光闪过。'); setTimeout(()=>{handleSearch762()},700);
-  } else if(/歌|song|love/.test(text)){
-    appendDialog('零：\"那首歌……我记得。\"'); branch = branch || 'redeem';
-  } else if(/帮|救|救他/.test(text)){
-    branch='redeem'; appendDialog('零愣住，像被点亮。');
-  } else if(/封印|结束/.test(text)){
-    branch='betray'; appendDialog('Phi 低语：\"做得好。\"');
-  } else if(/现实|太累|房贷/.test(text)){
-    branch='reality'; appendDialog('零的神情更沉了。');
-  }
-}
-
-[spriteZero,spriteE,spritePhi].forEach(sp=>sp.addEventListener('click',()=>{document.querySelectorAll('.spriteWrap').forEach(s=>s.classList.remove('active'));sp.classList.add('active');focus = sp.dataset.role; appendDialog('切换了焦点：'+focus);}));
-
-setInterval(()=>{const o=0.06 + Math.random()*0.3;shadowBox.querySelector('div').style.opacity=o},900);
-
-</script>
-</body>
-</html>
+<div style="margin-top:16px;display:flex;gap:12px;align-items:center">
+  <div class="small">当前焦点：</div><div id="currentFocus" class="small" style="font-weight:700">zero</div>
+</div>
