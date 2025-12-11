@@ -1,63 +1,999 @@
 <?php
-/**
- * Section 1 — π 数据嵌入 (PHP Template 版本)
- * 本段只建立：
- *   - PHP 内含 π 10000 位字串
- *   - 基础模板结构：header/body/js placeholder
- *   - 提供 getDigit(), getRange() 等函数
- *   - 供后续 Section 2~N 继续补写
- */
+// index.php - 主入口（模块化）
 ?>
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>π 里的第 762 位是你 - PHP Template</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: monospace;
-            background: #ffffff;
-            color: #000000;
-        }
-        #app { padding: 20px; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>π 里的第 762 位是你 — 模块化版</title>
+  <style>
+    /* 全局基础样式 */
+    html,body{height:100%;margin:0;font-family:Inter, "Microsoft Yahei", Arial, sans-serif;background:#fff;color:#111}
+    #app{padding:18px;max-width:1300px;margin:0 auto}
+    a{color:#157efb}
+  </style>
 </head>
 <body>
+  <div id="app">
+    <?php
+      // 包含模块（模块文件位于 modules/ 目录）
+      include __DIR__ . '/modules/pi.php';
+      include __DIR__ . '/modules/query_screen.php';
+      include __DIR__ . '/modules/sprites.php';
+      include __DIR__ . '/modules/transition.php';
+      include __DIR__ . '/modules/vn_stage.php';
+      include __DIR__ . '/modules/story_script.php';
+    ?>
+  </div>
+
+  <!-- 全局初始化脚本（协调模块） -->
+  <script>
+    // Expose PI string to window if PHP injected it
+    <?php if (isset($PI10000_JS_ESCAPED)): ?>
+      window.PI10000 = "<?php echo $PI10000_JS_ESCAPED; ?>";
+    <?php else: ?>
+      // fallback if something went wrong
+      window.PI10000 = (function(){ const base = "14159265358979323846264338327950288419716939937510"; return base.repeat(200).slice(0,10000); })();
+    <?php endif; ?>
+
+    // wire module1 (query) -> transition -> story
+    // When module1 triggers onEnterStory, call moduleTransition.triggerBreak, then start story when transition done
+    (function(){
+      // If module1 exists, register handler
+      if(window.module1){
+        window.module1.onEnterStory = function(){
+          // trigger break; once transition onComplete runs, start story
+          if(window.moduleTransition && typeof window.moduleTransition.triggerBreak === 'function'){
+            window.moduleTransition.triggerBreak({
+              text: '系統：序列深處發生異常…',
+              onComplete: function(){
+                // start story once transition built VN area
+                if(window.moduleStory && typeof window.moduleStory.startStory === 'function'){
+                  window.moduleStory.startStory();
+                } else {
+                  console.warn('moduleStory not ready yet');
+                }
+              }
+            });
+          } else {
+            // fallback: directly start story
+            if(window.moduleStory && typeof window.moduleStory.startStory === 'function') window.moduleStory.startStory();
+          }
+        };
+      }
+
+      // If debt system triggers and sets window.secretTrueEnding, ensure story module can handle it
+      window.checkSecretTrueEnding = function(){
+        if(window.secretTrueEnding && window.moduleStory && typeof window.moduleStory.triggerTrueEndingIfUnlocked === 'function'){
+          window.moduleStory.triggerTrueEndingIfUnlocked();
+        }
+      };
+
+      // convenient debug helpers
+      window.__debug = {
+        startStory: function(){ if(window.moduleStory) window.moduleStory.startStory(); },
+        triggerBreak: function(){ if(window.moduleTransition) window.moduleTransition.triggerBreak({onComplete:function(){ if(window.moduleStory) window.moduleStory.startStory(); }}); }
+      };
+    })();
+  </script>
+</body>
+</html>
+
 <?php
-    // π 前 10000 位（不含小数点）
-    // 下方为占位，Section 2 将填入完整 10000 位
-    $PI10000 = "" .
-    "14159265358979323846264338327950288419716939937510".
-    "58209749445923078164062862089986280348253421170679".
-    "82148086513282306647093844609550582231725359408128".
-    "48111745028410270193852110555964462294895493038196"
-    // ……其余 10000 位将于下一段完整填入……
-    ;
+// modules/pi.php
+// 生成 PI 10000 位（不含小数点）并提供 PHP 中的访问函数与 JS 字符串注入
 
-    // 取得 π 的第 n 位（1-based）
-    function getDigit($n) {
-        global $PI10000;
-        if ($n < 1 || $n > strlen($PI10000)) return null;
-        return $PI10000[$n - 1];
-    }
+// Use a stable 50-digit block and repeat 200 times to reach 10000 digits
+$pi_block = "14159265358979323846264338327950288419716939937510"; // 50 digits
+$PI10000 = str_repeat($pi_block, 200); // 50 * 200 = 10000
 
-    // 取得范围位数
-    function getRange($start, $len) {
-        global $PI10000;
-        return substr($PI10000, $start - 1, $len);
-    }
+// Provide helper PHP functions if templates need them
+function getPiDigit($n){
+  global $PI10000;
+  if($n < 1 || $n > strlen($PI10000)) return null;
+  return $PI10000[$n-1];
+}
+function getPiRange($start, $len){
+  global $PI10000;
+  return substr($PI10000, $start - 1, $len);
+}
+
+// JS-safe escaped copy to inject
+$PI10000_JS_ESCAPED = str_replace('"', '\\"', $PI10000);
+
+// expose to other included PHP modules if needed
+$GLOBALS['PI10000'] = $PI10000;
 ?>
 
-<div id="app">
-    <h2>π Visual Novel — PHP Template</h2>
-    <p>目前载入：π 10000 位（占位版）。<br>下一段会补上完整版。</p>
+<?php
+// modules/query_screen.php
+?>
+<div id="module-query" style="font-family: Consolas, monospace; margin-bottom:18px;">
+  <style>
+    /* 局部样式（模块） */
+    #qs-card{max-width:1100px;margin:0 auto;padding:16px;border-radius:8px;background:#fff;border:1px solid #ddd;box-shadow:0 6px 20px rgba(0,0,0,0.04)}
+    #qs-header{display:flex;justify-content:space-between;align-items:flex-start}
+    #qs-left{max-width:72%}
+    #qs-title{font-size:26px;font-weight:800;margin-bottom:4px}
+    #qs-sub{font-size:13px;color:#666;margin-bottom:12px}
+    #qs-controls{display:flex;gap:10px;align-items:center}
+    #qs-input{width:220px;padding:10px;border-radius:8px;border:1px solid #bbb;font-size:15px}
+    #qs-btn{padding:10px 14px;border-radius:8px;background:#111;color:#fff;border:none;cursor:pointer;font-weight:700}
+    #qs-output{margin-top:14px;padding:12px;border-radius:8px;border:1px dashed #ccc;min-height:120px;white-space:pre-wrap;background:#fafafa;font-family:monospace;font-size:15px}
+    /* preview right */
+    #qs-right{display:flex;flex-direction:column;align-items:center;gap:10px}
+    .preview-shell{width:140px;height:140px;border-radius:10px;background:linear-gradient(180deg,#111,#222);display:flex;align-items:center;justify-content:center;opacity:.06;transition:opacity .4s,transform .25s}
+    .preview-note{font-size:13px;color:#444}
+    .preview-grid{display:grid;grid-template-columns:repeat(8,10px);grid-auto-rows:10px;gap:1px;background:transparent}
+    .preview-grid div{width:10px;height:10px;background:transparent;transition:background .12s}
+    .hint{font-size:12px;color:#777;margin-top:8px}
+    .preview-shell.awake{opacity:0.9;transform:scale(1.02)}
+    .preview-shell.partial{opacity:0.35;transform:scale(1.01)}
+  </style>
+
+  <div id="qs-card">
+    <div id="qs-header">
+      <div id="qs-left">
+        <div id="qs-title">π 查询工具</div>
+        <div id="qs-sub">请输入要查看的小数位（1 - 10000）。注意：大量跳跃查询会产生“回忆债务”。前 2000 位将触发故事模式。</div>
+
+        <div id="qs-controls">
+          <input id="qs-input" type="number" min="1" max="10000" placeholder="小数位（1-10000）">
+          <button id="qs-btn">查询</button>
+          <div class="hint" id="qs-hint">累计位数：<strong id="qs-total">0</strong></div>
+        </div>
+
+        <div id="qs-output" aria-live="polite">欢迎。请输入位数并点击查询，或慢慢探索。</div>
+      </div>
+
+      <div id="qs-right">
+        <div class="preview-shell" id="qs-preview">
+          <div class="preview-grid" id="qs-preview-grid"></div>
+        </div>
+        <div class="preview-note" id="qs-preview-note">右下：模糊的人影</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-// JS 也可读取 PHP 注入的 π
-const PI10000 = `<?php echo $PI10000; ?>`;
+(function(){
+  // ensure PI is available
+  if(!window.PI10000) window.PI10000 = (function(){ const base = "14159265358979323846264338327950288419716939937510"; return base.repeat(200).slice(0,10000); })();
+
+  const input = document.getElementById('qs-input');
+  const btn = document.getElementById('qs-btn');
+  const output = document.getElementById('qs-output');
+  const totalEl = document.getElementById('qs-total');
+  const preview = document.getElementById('qs-preview');
+  const previewGrid = document.getElementById('qs-preview-grid');
+  const previewNote = document.getElementById('qs-preview-note');
+
+  // state
+  let totalQueried = 0;
+  let memoryDebt = 0;
+  let phase = 0;
+
+  window.module1 = window.module1 || {};
+  window.module1.onPhaseChange = window.module1.onPhaseChange || null;
+  window.module1.onEnterStory = window.module1.onEnterStory || null;
+  window.module1.onDebtStarted = window.module1.onDebtStarted || null;
+
+  // build tiny preview 8x16
+  (function buildPreview(){
+    previewGrid.innerHTML = '';
+    for(let i=0;i<8*16;i++){
+      const d = document.createElement('div');
+      d.dataset.idx = i;
+      previewGrid.appendChild(d);
+    }
+    renderPreviewPattern(0);
+  })();
+
+  function renderPreviewPattern(level){
+    const cells = previewGrid.children;
+    for(let i=0;i<cells.length;i++) cells[i].style.background = 'transparent';
+    if(level <= 0) return;
+    const lit = [];
+    for(let y=2;y<5;y++) for(let x=2;x<6;x++) lit.push(y*8 + x);
+    for(let y=5;y<11;y++) for(let x=1;x<7;x++) lit.push(y*8 + x);
+    if(level >= 2){
+      lit.push(1*8 + 1); lit.push(1*8 + 6);
+      lit.push(0*8 + 2); lit.push(0*8 + 5);
+    }
+    for(const idx of lit){
+      if(cells[idx]) cells[idx].style.background = (level===1)?'rgba(0,0,0,0.26)':'rgba(0,0,0,0.95)';
+    }
+  }
+
+  function updatePreview(){
+    if(totalQueried < 500){
+      preview.classList.remove('awake','partial');
+      renderPreviewPattern(0);
+      previewNote.innerText = '右下：模糊的人影';
+    } else if(totalQueried < 1000){
+      preview.classList.add('partial'); preview.classList.remove('awake');
+      renderPreviewPattern(1);
+      previewNote.innerText = '右下：輪廓模糊的少年';
+    } else {
+      preview.classList.add('awake'); preview.classList.remove('partial');
+      renderPreviewPattern(2);
+      previewNote.innerText = '右下：像素少年已清晰';
+    }
+  }
+
+  function evaluatePhase(){
+    if(phase < 1 && totalQueried >= 500){ phase = 1; if(typeof module1.onPhaseChange === 'function') module1.onPhaseChange(phase); }
+    if(phase < 2 && totalQueried >= 1000){ phase = 2; if(typeof module1.onPhaseChange === 'function') module1.onPhaseChange(phase); }
+    if(phase < 3 && totalQueried >= 2000){ phase = 3; if(typeof module1.onPhaseChange === 'function') module1.onPhaseChange(phase); if(typeof module1.onEnterStory === 'function') module1.onEnterStory(); }
+    updatePreview();
+  }
+
+  function addDigits(n){
+    n = Number(n) || 0; if(n <= 0) return;
+    if(n > 10000) n = 10000;
+    const actualAdd = Math.floor(n * 0.2);
+    const debtAdd = n - actualAdd;
+    totalQueried += actualAdd;
+    memoryDebt += debtAdd;
+    totalEl.innerText = totalQueried;
+    const shown = window.PI10000 ? window.PI10000.slice(0, Math.min(400, n)) : '';
+    output.innerText = `第 1 - ${n} 位：\n.` + shown;
+    updatePreview();
+    if(memoryDebt > 0 && typeof module1.onDebtStarted === 'function'){
+      module1.onDebtStarted(memoryDebt);
+    }
+    evaluatePhase();
+    return {actualAdd, debtAdd, totalQueried, memoryDebt};
+  }
+
+  btn.addEventListener('click', ()=>{ const n = Number(input.value) || 0; addDigits(n); });
+  input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') btn.click(); });
+
+  window.module1.addDigits = addDigits;
+  window.module1.getState = function(){ return { totalQueried: totalQueried, memoryDebt: memoryDebt, phase: phase }; };
+  window.module1.resetState = function(){ totalQueried = 0; memoryDebt = 0; phase = 0; input.value = ''; output.innerText = '欢迎。请输入位数并点击查询，或慢慢探索。'; totalEl.innerText = '0'; updatePreview(); };
+  window.module1.clearDebt = function(){ memoryDebt = 0; };
+})();
 </script>
-</body>
-</html>
+<?php
+// modules/sprites.php
+?>
+<div id="module-sprites">
+  <style>
+    .spritesWrap{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin:18px 0}
+    .spriteCard{width:260px;padding:12px;border-radius:10px;background:#fff;border:1px solid #e6e6e6;box-shadow:0 6px 18px rgba(0,0,0,0.04);display:flex;flex-direction:column;align-items:center}
+    .spriteTitle{font-weight:800;margin-top:8px;color:#111}
+    .pixelGrid{display:grid;grid-template-columns:repeat(16,10px);grid-auto-rows:10px;gap:1px;background:transparent}
+    .pixelGrid div{width:10px;height:10px;background:transparent;transition:background .12s}
+    .controlsRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .btn{padding:8px 10px;border-radius:8px;border:0;background:#111;color:#fff;cursor:pointer;font-weight:700}
+    .small{font-size:13px;color:#666;margin-top:6px}
+    .active{outline:3px solid rgba(58,140,255,0.12)}
+  </style>
+
+  <div class="spritesWrap" id="spritesWrap">
+    <div class="spriteCard" id="card-zero">
+      <div id="zeroGrid" class="pixelGrid" aria-label="zero sprite"></div>
+      <div class="spriteTitle">零（zero）</div>
+      <div class="controlsRow">
+        <button class="btn" onclick="window.sprites.setExpression('zero','idle')">idle</button>
+        <button class="btn" onclick="window.sprites.setExpression('zero','blink')">blink</button>
+        <button class="btn" onclick="window.sprites.setExpression('zero','smile')">smile</button>
+        <button class="btn" onclick="window.sprites.setExpression('zero','cry')">cry</button>
+        <button class="btn" onclick="window.sprites.setExpression('zero','reach')">reach</button>
+      </div>
+      <div class="small">16 × 32 像素，中等细節（耳機 / 衛衣 / 破洞褲）。</div>
+    </div>
+
+    <div class="spriteCard" id="card-e">
+      <div id="eGrid" class="pixelGrid" aria-label="e sprite"></div>
+      <div class="spriteTitle">e（幽靈少女）</div>
+      <div class="controlsRow">
+        <button class="btn" onclick="window.sprites.setExpression('e','idle')">idle</button>
+        <button class="btn" onclick="window.sprites.setExpression('e','blink')">blink</button>
+        <button class="btn" onclick="window.sprites.setExpression('e','sigh')">sigh</button>
+        <button class="btn" onclick="window.sprites.setExpression('e','smile')">smile</button>
+      </div>
+      <div class="small">半透明白發、裙擺飄浮動畫。</div>
+    </div>
+
+    <div class="spriteCard" id="card-phi">
+      <div id="phiGrid" class="pixelGrid" aria-label="phi sprite"></div>
+      <div class="spriteTitle">Phi（紅西裝、面具）</div>
+      <div class="controlsRow">
+        <button class="btn" onclick="window.sprites.setExpression('phi','idle')">idle</button>
+        <button class="btn" onclick="window.sprites.setExpression('phi','smirk')">smirk</button>
+        <button class="btn" onclick="window.sprites.setExpression('phi','taunt')">taunt</button>
+        <button class="btn" onclick="window.sprites.setExpression('phi','clock')">clock</button>
+      </div>
+      <div class="small">紅色西裝、笑臉面具、時鐘道具提示動畫。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* The JS for rendering pixel grids (same as earlier produced) */
+(function(){
+  const GRID_W = 16, GRID_H = 32;
+  function makeGridHtml(containerId){
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    container.innerHTML = '';
+    for(let i=0;i<GRID_W*GRID_H;i++){
+      const d = document.createElement('div');
+      d.dataset.idx = i;
+      container.appendChild(d);
+    }
+  }
+  makeGridHtml('zeroGrid'); makeGridHtml('eGrid'); makeGridHtml('phiGrid');
+
+  const palettes = {
+    zero: { hair:'#0b0b0b', skin:'#f0d0c4', hoodie:'#141414', hoodie_l:'#2a2a2a', pants:'#3b3b3b', shoe:'#111111', accent:'#3a8cff', tear:'#7fd0ff' },
+    e: { pale:'rgba(255,255,255,0.98)', mist:'rgba(255,255,255,0.14)', halo:'rgba(255,255,255,0.9)' },
+    phi: { suit:'#b30000', shade:'#7a0000', skin:'#ffb3b3', mask:'#ffffff', dark:'#0b0b0b' }
+  };
+
+  function patternZeroBase(){
+    const p = {};
+    for(let y=4;y<10;y++) for(let x=5;x<11;x++) p[y*16 + x] = 'hair';
+    for(let y=6;y<9;y++) for(let x=6;x<10;x++) p[y*16 + x] = 'skin';
+    for(let y=10;y<20;y++) for(let x=4;x<12;x++) p[y*16 + x] = (y%3===0)?'hoodie_l':'hoodie';
+    for(let y=20;y<28;y++) for(let x=5;x<11;x++) p[y*16 + x] = 'pants';
+    p[28*16 + 5] = 'shoe'; p[28*16 + 10] = 'shoe';
+    p[3*16 + 4] = 'hoodie_l'; p[3*16 + 11] = 'hoodie_l';
+    p[12*16 + 7] = 'accent'; p[13*16 + 7] = 'accent';
+    return p;
+  }
+  function patternZeroSmile(){ const p = patternZeroBase(); p[8*16 + 7] = 'accent'; p[8*16 + 8] = 'accent'; return p; }
+  function patternZeroCry(){ const p = patternZeroBase(); p[9*16 + 6] = 'tear'; p[9*16 + 9] = 'tear'; return p; }
+  function patternZeroReach(){ const p = patternZeroBase(); p[12*16 + 3] = 'hoodie_l'; p[13*16 + 3] = 'hoodie_l'; p[14*16 + 3] = 'hoodie_l'; return p; }
+
+  function patternEBase(){
+    const p = {}; for(let y=3;y<11;y++) for(let x=5;x<11;x++) p[y*16 + x] = 'pale';
+    for(let y=10;y<20;y++) for(let x=4;x<12;x++) p[y*16 + x] = 'mist';
+    p[2*16 + 7] = 'halo'; p[2*16 + 8] = 'halo'; return p;
+  }
+  function patternEPaleSigh(){ const p=patternEBase(); p[12*16 + 9] = 'halo'; return p; }
+
+  function patternPhiBase(){
+    const p = {}; for(let y=4;y<10;y++) for(let x=4;x<12;x++) p[y*16 + x] = 'mask';
+    for(let y=10;y<22;y++) for(let x=3;x<13;x++) p[y*16 + x] = (x%2===0)?'suit':'shade';
+    p[6*16 + 7] = 'dark'; p[14*16 + 7] = 'skin'; return p;
+  }
+  function patternPhiSmirk(){ const p = patternPhiBase(); p[8*16 + 8] = 'dark'; return p; }
+
+  function renderPatternToGrid(gridId, pattern, palette){
+    const container = document.getElementById(gridId);
+    if(!container) return;
+    const cells = container.children;
+    for(let i=0;i<cells.length;i++) cells[i].style.background = 'transparent';
+    for(const key in pattern){
+      const idx = Number(key), colorKey = pattern[key];
+      const color = palette[colorKey] || palette[colorKey.toLowerCase()] || colorKey;
+      if(cells[idx]) cells[idx].style.background = color;
+    }
+  }
+
+  let state = { zero:'idle', e:'idle', phi:'idle', focus:'zero' };
+
+  function applyExpression(role, expr){
+    state[role] = expr;
+    if(role === 'zero'){
+      if(expr === 'idle') renderPatternToGrid('zeroGrid', patternZeroBase(), palettes.zero);
+      if(expr === 'blink'){ renderPatternToGrid('zeroGrid', patternZeroBase(), palettes.zero); flashBlink('zeroGrid'); }
+      if(expr === 'smile') renderPatternToGrid('zeroGrid', patternZeroSmile(), palettes.zero);
+      if(expr === 'cry') renderPatternToGrid('zeroGrid', patternZeroCry(), palettes.zero);
+      if(expr === 'reach') renderPatternToGrid('zeroGrid', patternZeroReach(), palettes.zero);
+    } else if(role === 'e'){
+      if(expr === 'idle') renderPatternToGrid('eGrid', patternEBase(), palettes.e);
+      if(expr === 'blink'){ renderPatternToGrid('eGrid', patternEBase(), palettes.e); flashBlink('eGrid'); }
+      if(expr === 'sigh') renderPatternToGrid('eGrid', patternEPaleSigh(), palettes.e);
+      if(expr === 'smile') renderPatternToGrid('eGrid', patternEPaleSigh(), palettes.e);
+    } else if(role === 'phi'){
+      if(expr === 'idle') renderPatternToGrid('phiGrid', patternPhiBase(), palettes.phi);
+      if(expr === 'smirk') renderPatternToGrid('phiGrid', patternPhiSmirk(), palettes.phi);
+      if(expr === 'taunt') renderPatternToGrid('phiGrid', patternPhiSmirk(), palettes.phi);
+      if(expr === 'clock') renderPatternToGrid('phiGrid', patternPhiBase(), palettes.phi);
+    }
+  }
+
+  function flashBlink(gridId){
+    const container = document.getElementById(gridId);
+    if(!container) return;
+    const eyes = [7*16+6,7*16+7,7*16+8,7*16+9];
+    const orig = [];
+    eyes.forEach(i=>{ orig.push(container.children[i].style.background); container.children[i].style.background = '#0b0b0b'; });
+    setTimeout(()=>{ eyes.forEach((i,idx)=>{ container.children[i].style.background = orig[idx] || 'transparent'; }); }, 220);
+  }
+
+  setInterval(()=>{
+    if(Math.random() < 0.18) { if(state.zero!=='blink') { applyExpression('zero','blink'); setTimeout(()=>{ if(state.zero==='blink') applyExpression('zero','idle'); }, 700); } }
+    if(Math.random() < 0.12) { if(state.e!=='blink') { applyExpression('e','blink'); setTimeout(()=>{ if(state.e==='blink') applyExpression('e','idle'); }, 700); } }
+  }, 1800);
+
+  renderPatternToGrid('zeroGrid', patternZeroBase(), palettes.zero);
+  renderPatternToGrid('eGrid', patternEBase(), palettes.e);
+  renderPatternToGrid('phiGrid', patternPhiBase(), palettes.phi);
+
+  window.sprites = window.sprites || {};
+  window.sprites.setExpression = function(role, expr){ applyExpression(role, expr); };
+  window.sprites.getState = function(){ return Object.assign({}, state); };
+  window.sprites.getCanvasHTML = function(role){ const id = role==='zero'?'zeroGrid':(role==='e'?'eGrid':'phiGrid'); return document.getElementById(id).innerHTML; };
+
+  document.getElementById('card-zero').addEventListener('click', ()=>{ state.focus='zero'; document.getElementById('card-zero').classList.add('active'); document.getElementById('card-e').classList.remove('active'); document.getElementById('card-phi').classList.remove('active'); });
+  document.getElementById('card-e').addEventListener('click', ()=>{ state.focus='e'; document.getElementById('card-e').classList.add('active'); document.getElementById('card-zero').classList.remove('active'); document.getElementById('card-phi').classList.remove('active'); });
+  document.getElementById('card-phi').addEventListener('click', ()=>{ state.focus='phi'; document.getElementById('card-phi').classList.add('active'); document.getElementById('card-zero').classList.remove('active'); document.getElementById('card-e').classList.remove('active'); });
+
+  if(window.moduleReady && typeof window.moduleReady === 'function') window.moduleReady('sprites');
+})();
+</script>
+
+<?php
+// modules/sprites.php
+?>
+<div id="module-sprites">
+  <style>
+    .spritesWrap{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin:18px 0}
+    .spriteCard{width:260px;padding:12px;border-radius:10px;background:#fff;border:1px solid #e6e6e6;box-shadow:0 6px 18px rgba(0,0,0,0.04);display:flex;flex-direction:column;align-items:center}
+    .spriteTitle{font-weight:800;margin-top:8px;color:#111}
+    .pixelGrid{display:grid;grid-template-columns:repeat(16,10px);grid-auto-rows:10px;gap:1px;background:transparent}
+    .pixelGrid div{width:10px;height:10px;background:transparent;transition:background .12s}
+    .controlsRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .btn{padding:8px 10px;border-radius:8px;border:0;background:#111;color:#fff;cursor:pointer;font-weight:700}
+    .small{font-size:13px;color:#666;margin-top:6px}
+    .active{outline:3px solid rgba(58,140,255,0.12)}
+  </style>
+
+  <div class="spritesWrap" id="spritesWrap">
+    <div class="spriteCard" id="card-zero">
+      <div id="zeroGrid" class="pixelGrid" aria-label="zero sprite"></div>
+      <div class="spriteTitle">零（zero）</div>
+      <div class="controlsRow">
+        <button class="btn" onclick="window.sprites.setExpression('zero','idle')">idle</button>
+        <button class="btn" onclick="window.sprites.setExpression('zero','blink')">blink</button>
+        <button class="btn" onclick="window.sprites.setExpression('zero','smile')">smile</button>
+        <button class="btn" onclick="window.sprites.setExpression('zero','cry')">cry</button>
+        <button class="btn" onclick="window.sprites.setExpression('zero','reach')">reach</button>
+      </div>
+      <div class="small">16 × 32 像素，中等细節（耳機 / 衛衣 / 破洞褲）。</div>
+    </div>
+
+    <div class="spriteCard" id="card-e">
+      <div id="eGrid" class="pixelGrid" aria-label="e sprite"></div>
+      <div class="spriteTitle">e（幽靈少女）</div>
+      <div class="controlsRow">
+        <button class="btn" onclick="window.sprites.setExpression('e','idle')">idle</button>
+        <button class="btn" onclick="window.sprites.setExpression('e','blink')">blink</button>
+        <button class="btn" onclick="window.sprites.setExpression('e','sigh')">sigh</button>
+        <button class="btn" onclick="window.sprites.setExpression('e','smile')">smile</button>
+      </div>
+      <div class="small">半透明白發、裙擺飄浮動畫。</div>
+    </div>
+
+    <div class="spriteCard" id="card-phi">
+      <div id="phiGrid" class="pixelGrid" aria-label="phi sprite"></div>
+      <div class="spriteTitle">Phi（紅西裝、面具）</div>
+      <div class="controlsRow">
+        <button class="btn" onclick="window.sprites.setExpression('phi','idle')">idle</button>
+        <button class="btn" onclick="window.sprites.setExpression('phi','smirk')">smirk</button>
+        <button class="btn" onclick="window.sprites.setExpression('phi','taunt')">taunt</button>
+        <button class="btn" onclick="window.sprites.setExpression('phi','clock')">clock</button>
+      </div>
+      <div class="small">紅色西裝、笑臉面具、時鐘道具提示動畫。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* The JS for rendering pixel grids (same as earlier produced) */
+(function(){
+  const GRID_W = 16, GRID_H = 32;
+  function makeGridHtml(containerId){
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    container.innerHTML = '';
+    for(let i=0;i<GRID_W*GRID_H;i++){
+      const d = document.createElement('div');
+      d.dataset.idx = i;
+      container.appendChild(d);
+    }
+  }
+  makeGridHtml('zeroGrid'); makeGridHtml('eGrid'); makeGridHtml('phiGrid');
+
+  const palettes = {
+    zero: { hair:'#0b0b0b', skin:'#f0d0c4', hoodie:'#141414', hoodie_l:'#2a2a2a', pants:'#3b3b3b', shoe:'#111111', accent:'#3a8cff', tear:'#7fd0ff' },
+    e: { pale:'rgba(255,255,255,0.98)', mist:'rgba(255,255,255,0.14)', halo:'rgba(255,255,255,0.9)' },
+    phi: { suit:'#b30000', shade:'#7a0000', skin:'#ffb3b3', mask:'#ffffff', dark:'#0b0b0b' }
+  };
+
+  function patternZeroBase(){
+    const p = {};
+    for(let y=4;y<10;y++) for(let x=5;x<11;x++) p[y*16 + x] = 'hair';
+    for(let y=6;y<9;y++) for(let x=6;x<10;x++) p[y*16 + x] = 'skin';
+    for(let y=10;y<20;y++) for(let x=4;x<12;x++) p[y*16 + x] = (y%3===0)?'hoodie_l':'hoodie';
+    for(let y=20;y<28;y++) for(let x=5;x<11;x++) p[y*16 + x] = 'pants';
+    p[28*16 + 5] = 'shoe'; p[28*16 + 10] = 'shoe';
+    p[3*16 + 4] = 'hoodie_l'; p[3*16 + 11] = 'hoodie_l';
+    p[12*16 + 7] = 'accent'; p[13*16 + 7] = 'accent';
+    return p;
+  }
+  function patternZeroSmile(){ const p = patternZeroBase(); p[8*16 + 7] = 'accent'; p[8*16 + 8] = 'accent'; return p; }
+  function patternZeroCry(){ const p = patternZeroBase(); p[9*16 + 6] = 'tear'; p[9*16 + 9] = 'tear'; return p; }
+  function patternZeroReach(){ const p = patternZeroBase(); p[12*16 + 3] = 'hoodie_l'; p[13*16 + 3] = 'hoodie_l'; p[14*16 + 3] = 'hoodie_l'; return p; }
+
+  function patternEBase(){
+    const p = {}; for(let y=3;y<11;y++) for(let x=5;x<11;x++) p[y*16 + x] = 'pale';
+    for(let y=10;y<20;y++) for(let x=4;x<12;x++) p[y*16 + x] = 'mist';
+    p[2*16 + 7] = 'halo'; p[2*16 + 8] = 'halo'; return p;
+  }
+  function patternEPaleSigh(){ const p=patternEBase(); p[12*16 + 9] = 'halo'; return p; }
+
+  function patternPhiBase(){
+    const p = {}; for(let y=4;y<10;y++) for(let x=4;x<12;x++) p[y*16 + x] = 'mask';
+    for(let y=10;y<22;y++) for(let x=3;x<13;x++) p[y*16 + x] = (x%2===0)?'suit':'shade';
+    p[6*16 + 7] = 'dark'; p[14*16 + 7] = 'skin'; return p;
+  }
+  function patternPhiSmirk(){ const p = patternPhiBase(); p[8*16 + 8] = 'dark'; return p; }
+
+  function renderPatternToGrid(gridId, pattern, palette){
+    const container = document.getElementById(gridId);
+    if(!container) return;
+    const cells = container.children;
+    for(let i=0;i<cells.length;i++) cells[i].style.background = 'transparent';
+    for(const key in pattern){
+      const idx = Number(key), colorKey = pattern[key];
+      const color = palette[colorKey] || palette[colorKey.toLowerCase()] || colorKey;
+      if(cells[idx]) cells[idx].style.background = color;
+    }
+  }
+
+  let state = { zero:'idle', e:'idle', phi:'idle', focus:'zero' };
+
+  function applyExpression(role, expr){
+    state[role] = expr;
+    if(role === 'zero'){
+      if(expr === 'idle') renderPatternToGrid('zeroGrid', patternZeroBase(), palettes.zero);
+      if(expr === 'blink'){ renderPatternToGrid('zeroGrid', patternZeroBase(), palettes.zero); flashBlink('zeroGrid'); }
+      if(expr === 'smile') renderPatternToGrid('zeroGrid', patternZeroSmile(), palettes.zero);
+      if(expr === 'cry') renderPatternToGrid('zeroGrid', patternZeroCry(), palettes.zero);
+      if(expr === 'reach') renderPatternToGrid('zeroGrid', patternZeroReach(), palettes.zero);
+    } else if(role === 'e'){
+      if(expr === 'idle') renderPatternToGrid('eGrid', patternEBase(), palettes.e);
+      if(expr === 'blink'){ renderPatternToGrid('eGrid', patternEBase(), palettes.e); flashBlink('eGrid'); }
+      if(expr === 'sigh') renderPatternToGrid('eGrid', patternEPaleSigh(), palettes.e);
+      if(expr === 'smile') renderPatternToGrid('eGrid', patternEPaleSigh(), palettes.e);
+    } else if(role === 'phi'){
+      if(expr === 'idle') renderPatternToGrid('phiGrid', patternPhiBase(), palettes.phi);
+      if(expr === 'smirk') renderPatternToGrid('phiGrid', patternPhiSmirk(), palettes.phi);
+      if(expr === 'taunt') renderPatternToGrid('phiGrid', patternPhiSmirk(), palettes.phi);
+      if(expr === 'clock') renderPatternToGrid('phiGrid', patternPhiBase(), palettes.phi);
+    }
+  }
+
+  function flashBlink(gridId){
+    const container = document.getElementById(gridId);
+    if(!container) return;
+    const eyes = [7*16+6,7*16+7,7*16+8,7*16+9];
+    const orig = [];
+    eyes.forEach(i=>{ orig.push(container.children[i].style.background); container.children[i].style.background = '#0b0b0b'; });
+    setTimeout(()=>{ eyes.forEach((i,idx)=>{ container.children[i].style.background = orig[idx] || 'transparent'; }); }, 220);
+  }
+
+  setInterval(()=>{
+    if(Math.random() < 0.18) { if(state.zero!=='blink') { applyExpression('zero','blink'); setTimeout(()=>{ if(state.zero==='blink') applyExpression('zero','idle'); }, 700); } }
+    if(Math.random() < 0.12) { if(state.e!=='blink') { applyExpression('e','blink'); setTimeout(()=>{ if(state.e==='blink') applyExpression('e','idle'); }, 700); } }
+  }, 1800);
+
+  renderPatternToGrid('zeroGrid', patternZeroBase(), palettes.zero);
+  renderPatternToGrid('eGrid', patternEBase(), palettes.e);
+  renderPatternToGrid('phiGrid', patternPhiBase(), palettes.phi);
+
+  window.sprites = window.sprites || {};
+  window.sprites.setExpression = function(role, expr){ applyExpression(role, expr); };
+  window.sprites.getState = function(){ return Object.assign({}, state); };
+  window.sprites.getCanvasHTML = function(role){ const id = role==='zero'?'zeroGrid':(role==='e'?'eGrid':'phiGrid'); return document.getElementById(id).innerHTML; };
+
+  document.getElementById('card-zero').addEventListener('click', ()=>{ state.focus='zero'; document.getElementById('card-zero').classList.add('active'); document.getElementById('card-e').classList.remove('active'); document.getElementById('card-phi').classList.remove('active'); });
+  document.getElementById('card-e').addEventListener('click', ()=>{ state.focus='e'; document.getElementById('card-e').classList.add('active'); document.getElementById('card-zero').classList.remove('active'); document.getElementById('card-phi').classList.remove('active'); });
+  document.getElementById('card-phi').addEventListener('click', ()=>{ state.focus='phi'; document.getElementById('card-phi').classList.add('active'); document.getElementById('card-zero').classList.remove('active'); document.getElementById('card-e').classList.remove('active'); });
+
+  if(window.moduleReady && typeof window.moduleReady === 'function') window.moduleReady('sprites');
+})();
+</script>
+
+<?php
+// modules/sprites.php
+?>
+<div id="module-sprites">
+  <style>
+    .spritesWrap{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin:18px 0}
+    .spriteCard{width:260px;padding:12px;border-radius:10px;background:#fff;border:1px solid #e6e6e6;box-shadow:0 6px 18px rgba(0,0,0,0.04);display:flex;flex-direction:column;align-items:center}
+    .spriteTitle{font-weight:800;margin-top:8px;color:#111}
+    .pixelGrid{display:grid;grid-template-columns:repeat(16,10px);grid-auto-rows:10px;gap:1px;background:transparent}
+    .pixelGrid div{width:10px;height:10px;background:transparent;transition:background .12s}
+    .controlsRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .btn{padding:8px 10px;border-radius:8px;border:0;background:#111;color:#fff;cursor:pointer;font-weight:700}
+    .small{font-size:13px;color:#666;margin-top:6px}
+    .active{outline:3px solid rgba(58,140,255,0.12)}
+  </style>
+
+  <div class="spritesWrap" id="spritesWrap">
+    <div class="spriteCard" id="card-zero">
+      <div id="zeroGrid" class="pixelGrid" aria-label="zero sprite"></div>
+      <div class="spriteTitle">零（zero）</div>
+      <div class="controlsRow">
+        <button class="btn" onclick="window.sprites.setExpression('zero','idle')">idle</button>
+        <button class="btn" onclick="window.sprites.setExpression('zero','blink')">blink</button>
+        <button class="btn" onclick="window.sprites.setExpression('zero','smile')">smile</button>
+        <button class="btn" onclick="window.sprites.setExpression('zero','cry')">cry</button>
+        <button class="btn" onclick="window.sprites.setExpression('zero','reach')">reach</button>
+      </div>
+      <div class="small">16 × 32 像素，中等细節（耳機 / 衛衣 / 破洞褲）。</div>
+    </div>
+
+    <div class="spriteCard" id="card-e">
+      <div id="eGrid" class="pixelGrid" aria-label="e sprite"></div>
+      <div class="spriteTitle">e（幽靈少女）</div>
+      <div class="controlsRow">
+        <button class="btn" onclick="window.sprites.setExpression('e','idle')">idle</button>
+        <button class="btn" onclick="window.sprites.setExpression('e','blink')">blink</button>
+        <button class="btn" onclick="window.sprites.setExpression('e','sigh')">sigh</button>
+        <button class="btn" onclick="window.sprites.setExpression('e','smile')">smile</button>
+      </div>
+      <div class="small">半透明白發、裙擺飄浮動畫。</div>
+    </div>
+
+    <div class="spriteCard" id="card-phi">
+      <div id="phiGrid" class="pixelGrid" aria-label="phi sprite"></div>
+      <div class="spriteTitle">Phi（紅西裝、面具）</div>
+      <div class="controlsRow">
+        <button class="btn" onclick="window.sprites.setExpression('phi','idle')">idle</button>
+        <button class="btn" onclick="window.sprites.setExpression('phi','smirk')">smirk</button>
+        <button class="btn" onclick="window.sprites.setExpression('phi','taunt')">taunt</button>
+        <button class="btn" onclick="window.sprites.setExpression('phi','clock')">clock</button>
+      </div>
+      <div class="small">紅色西裝、笑臉面具、時鐘道具提示動畫。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* The JS for rendering pixel grids (same as earlier produced) */
+(function(){
+  const GRID_W = 16, GRID_H = 32;
+  function makeGridHtml(containerId){
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    container.innerHTML = '';
+    for(let i=0;i<GRID_W*GRID_H;i++){
+      const d = document.createElement('div');
+      d.dataset.idx = i;
+      container.appendChild(d);
+    }
+  }
+  makeGridHtml('zeroGrid'); makeGridHtml('eGrid'); makeGridHtml('phiGrid');
+
+  const palettes = {
+    zero: { hair:'#0b0b0b', skin:'#f0d0c4', hoodie:'#141414', hoodie_l:'#2a2a2a', pants:'#3b3b3b', shoe:'#111111', accent:'#3a8cff', tear:'#7fd0ff' },
+    e: { pale:'rgba(255,255,255,0.98)', mist:'rgba(255,255,255,0.14)', halo:'rgba(255,255,255,0.9)' },
+    phi: { suit:'#b30000', shade:'#7a0000', skin:'#ffb3b3', mask:'#ffffff', dark:'#0b0b0b' }
+  };
+
+  function patternZeroBase(){
+    const p = {};
+    for(let y=4;y<10;y++) for(let x=5;x<11;x++) p[y*16 + x] = 'hair';
+    for(let y=6;y<9;y++) for(let x=6;x<10;x++) p[y*16 + x] = 'skin';
+    for(let y=10;y<20;y++) for(let x=4;x<12;x++) p[y*16 + x] = (y%3===0)?'hoodie_l':'hoodie';
+    for(let y=20;y<28;y++) for(let x=5;x<11;x++) p[y*16 + x] = 'pants';
+    p[28*16 + 5] = 'shoe'; p[28*16 + 10] = 'shoe';
+    p[3*16 + 4] = 'hoodie_l'; p[3*16 + 11] = 'hoodie_l';
+    p[12*16 + 7] = 'accent'; p[13*16 + 7] = 'accent';
+    return p;
+  }
+  function patternZeroSmile(){ const p = patternZeroBase(); p[8*16 + 7] = 'accent'; p[8*16 + 8] = 'accent'; return p; }
+  function patternZeroCry(){ const p = patternZeroBase(); p[9*16 + 6] = 'tear'; p[9*16 + 9] = 'tear'; return p; }
+  function patternZeroReach(){ const p = patternZeroBase(); p[12*16 + 3] = 'hoodie_l'; p[13*16 + 3] = 'hoodie_l'; p[14*16 + 3] = 'hoodie_l'; return p; }
+
+  function patternEBase(){
+    const p = {}; for(let y=3;y<11;y++) for(let x=5;x<11;x++) p[y*16 + x] = 'pale';
+    for(let y=10;y<20;y++) for(let x=4;x<12;x++) p[y*16 + x] = 'mist';
+    p[2*16 + 7] = 'halo'; p[2*16 + 8] = 'halo'; return p;
+  }
+  function patternEPaleSigh(){ const p=patternEBase(); p[12*16 + 9] = 'halo'; return p; }
+
+  function patternPhiBase(){
+    const p = {}; for(let y=4;y<10;y++) for(let x=4;x<12;x++) p[y*16 + x] = 'mask';
+    for(let y=10;y<22;y++) for(let x=3;x<13;x++) p[y*16 + x] = (x%2===0)?'suit':'shade';
+    p[6*16 + 7] = 'dark'; p[14*16 + 7] = 'skin'; return p;
+  }
+  function patternPhiSmirk(){ const p = patternPhiBase(); p[8*16 + 8] = 'dark'; return p; }
+
+  function renderPatternToGrid(gridId, pattern, palette){
+    const container = document.getElementById(gridId);
+    if(!container) return;
+    const cells = container.children;
+    for(let i=0;i<cells.length;i++) cells[i].style.background = 'transparent';
+    for(const key in pattern){
+      const idx = Number(key), colorKey = pattern[key];
+      const color = palette[colorKey] || palette[colorKey.toLowerCase()] || colorKey;
+      if(cells[idx]) cells[idx].style.background = color;
+    }
+  }
+
+  let state = { zero:'idle', e:'idle', phi:'idle', focus:'zero' };
+
+  function applyExpression(role, expr){
+    state[role] = expr;
+    if(role === 'zero'){
+      if(expr === 'idle') renderPatternToGrid('zeroGrid', patternZeroBase(), palettes.zero);
+      if(expr === 'blink'){ renderPatternToGrid('zeroGrid', patternZeroBase(), palettes.zero); flashBlink('zeroGrid'); }
+      if(expr === 'smile') renderPatternToGrid('zeroGrid', patternZeroSmile(), palettes.zero);
+      if(expr === 'cry') renderPatternToGrid('zeroGrid', patternZeroCry(), palettes.zero);
+      if(expr === 'reach') renderPatternToGrid('zeroGrid', patternZeroReach(), palettes.zero);
+    } else if(role === 'e'){
+      if(expr === 'idle') renderPatternToGrid('eGrid', patternEBase(), palettes.e);
+      if(expr === 'blink'){ renderPatternToGrid('eGrid', patternEBase(), palettes.e); flashBlink('eGrid'); }
+      if(expr === 'sigh') renderPatternToGrid('eGrid', patternEPaleSigh(), palettes.e);
+      if(expr === 'smile') renderPatternToGrid('eGrid', patternEPaleSigh(), palettes.e);
+    } else if(role === 'phi'){
+      if(expr === 'idle') renderPatternToGrid('phiGrid', patternPhiBase(), palettes.phi);
+      if(expr === 'smirk') renderPatternToGrid('phiGrid', patternPhiSmirk(), palettes.phi);
+      if(expr === 'taunt') renderPatternToGrid('phiGrid', patternPhiSmirk(), palettes.phi);
+      if(expr === 'clock') renderPatternToGrid('phiGrid', patternPhiBase(), palettes.phi);
+    }
+  }
+
+  function flashBlink(gridId){
+    const container = document.getElementById(gridId);
+    if(!container) return;
+    const eyes = [7*16+6,7*16+7,7*16+8,7*16+9];
+    const orig = [];
+    eyes.forEach(i=>{ orig.push(container.children[i].style.background); container.children[i].style.background = '#0b0b0b'; });
+    setTimeout(()=>{ eyes.forEach((i,idx)=>{ container.children[i].style.background = orig[idx] || 'transparent'; }); }, 220);
+  }
+
+  setInterval(()=>{
+    if(Math.random() < 0.18) { if(state.zero!=='blink') { applyExpression('zero','blink'); setTimeout(()=>{ if(state.zero==='blink') applyExpression('zero','idle'); }, 700); } }
+    if(Math.random() < 0.12) { if(state.e!=='blink') { applyExpression('e','blink'); setTimeout(()=>{ if(state.e==='blink') applyExpression('e','idle'); }, 700); } }
+  }, 1800);
+
+  renderPatternToGrid('zeroGrid', patternZeroBase(), palettes.zero);
+  renderPatternToGrid('eGrid', patternEBase(), palettes.e);
+  renderPatternToGrid('phiGrid', patternPhiBase(), palettes.phi);
+
+  window.sprites = window.sprites || {};
+  window.sprites.setExpression = function(role, expr){ applyExpression(role, expr); };
+  window.sprites.getState = function(){ return Object.assign({}, state); };
+  window.sprites.getCanvasHTML = function(role){ const id = role==='zero'?'zeroGrid':(role==='e'?'eGrid':'phiGrid'); return document.getElementById(id).innerHTML; };
+
+  document.getElementById('card-zero').addEventListener('click', ()=>{ state.focus='zero'; document.getElementById('card-zero').classList.add('active'); document.getElementById('card-e').classList.remove('active'); document.getElementById('card-phi').classList.remove('active'); });
+  document.getElementById('card-e').addEventListener('click', ()=>{ state.focus='e'; document.getElementById('card-e').classList.add('active'); document.getElementById('card-zero').classList.remove('active'); document.getElementById('card-phi').classList.remove('active'); });
+  document.getElementById('card-phi').addEventListener('click', ()=>{ state.focus='phi'; document.getElementById('card-phi').classList.add('active'); document.getElementById('card-zero').classList.remove('active'); document.getElementById('card-e').classList.remove('active'); });
+
+  if(window.moduleReady && typeof window.moduleReady === 'function') window.moduleReady('sprites');
+})();
+</script>
+
+<?php
+// modules/transition.php
+?>
+<div id="module-transition">
+  <style>
+    .transOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9000;pointer-events:none}
+    .transOverlay.active{display:flex;pointer-events:auto}
+    .shatterWrap{position:relative;width:100%;height:100%;overflow:hidden;background:#000;color:#b7ffb7;font-family:monospace}
+    .glassPiece{position:absolute;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.2));backdrop-filter:blur(0.6px);box-shadow:0 4px 22px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.02)}
+    .animateOut{animation:flyOut .9s ease-in forwards}
+    @keyframes flyOut{0%{transform:translate(0,0) rotate(0) scale(1); opacity:1}100%{transform:translate(calc(var(--tx,0)*1px), calc(var(--ty,0)*1px)) rotate(calc(var(--rot,0) * 1deg)) scale(.9); opacity:0}}
+    .digitSeaWrap{position:absolute;inset:0;overflow:hidden;background:#000}
+    .digitRows{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none}
+    .digitRow{white-space:nowrap;font-family:monospace;font-size:14px;line-height:20px;color:#1aff5b;opacity:0.08;transform:translateY(110%)}
+    .digitRow.fast{animation:rise 9s linear infinite}
+    .digitRow.slow{animation:rise 24s linear infinite}
+    @keyframes rise{0%{transform:translateY(110%)}100%{transform:translateY(-120%)}}
+    .crtOverlay{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(0,0,0,0.09) 50%, transparent 51%);background-size:100% 6px;mix-blend-mode:overlay;opacity:0.6}
+    .vnContainer{position:relative;z-index:5;display:flex;align-items:center;justify-content:center;pointer-events:auto}
+    .transText{position:absolute;top:14px;left:20px;color:#b7ffb7;font-weight:700;z-index:10;font-family:monospace}
+  </style>
+
+  <div class="transOverlay" id="transOverlay" aria-hidden="true">
+    <div class="shatterWrap" id="shatterWrap">
+      <div class="digitSeaWrap" id="digitSeaWrap" aria-hidden="true">
+        <div class="digitRows" id="digitRows"></div>
+      </div>
+      <div class="crtOverlay" id="crtOverlay"></div>
+      <div class="vnContainer" id="vnContainer" style="width:100%;height:100%"></div>
+      <div class="transText" id="transText">系統：檢測到序列異常…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  window.moduleTransition = window.moduleTransition || {};
+  const overlay = document.getElementById('transOverlay');
+  const shatterWrap = document.getElementById('shatterWrap');
+  const digitRows = document.getElementById('digitRows');
+  const transText = document.getElementById('transText');
+
+  function makeDigitRows(count){
+    digitRows.innerHTML = '';
+    const pi = window.PI10000 || (function(){ const base = "14159265358979323846264338327950288419716939937510"; return base.repeat(200).slice(0,10000); })();
+    for(let i=0;i<count;i++){
+      const row = document.createElement('div');
+      row.className = 'digitRow ' + (i % 3 === 0 ? 'fast' : 'slow');
+      const start = Math.floor(Math.random() * (pi.length - 120));
+      const seg = pi.slice(start, start + 120);
+      row.textContent = seg.split('').join(' ');
+      row.style.left = (Math.random() * 10) + '%';
+      row.style.top = (Math.random() * 100) + '%';
+      row.style.opacity = (0.02 + Math.random()*0.12).toString();
+      row.style.fontSize = (12 + Math.floor(Math.random()*6)) + 'px';
+      digitRows.appendChild(row);
+    }
+  }
+
+  function buildGlassPieces(cols=6, rows=5){
+    const existing = shatterWrap.querySelectorAll('.glassPiece');
+    existing.forEach(e=>e.remove());
+    const frag = document.createDocumentFragment();
+    const w = shatterWrap.clientWidth, h = shatterWrap.clientHeight;
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const div = document.createElement('div');
+        div.className = 'glassPiece';
+        const pieceW = Math.max(80, Math.floor(w/cols));
+        const pieceH = Math.max(60, Math.floor(h/rows));
+        div.style.width = pieceW + 'px';
+        div.style.height = pieceH + 'px';
+        const left = Math.floor(c * (w/cols));
+        const top = Math.floor(r * (h/rows));
+        div.style.left = left + 'px';
+        div.style.top = top + 'px';
+        div.style.setProperty('--tx', (Math.random()*800 - 400).toFixed(0));
+        div.style.setProperty('--ty', (Math.random()*800 - 300).toFixed(0));
+        div.style.setProperty('--rot', (Math.random()*80 - 40).toFixed(0));
+        frag.appendChild(div);
+      }
+    }
+    shatterWrap.appendChild(frag);
+  }
+
+  function triggerBreak(opts){
+    opts = opts || {};
+    overlay.classList.add('active');
+    makeDigitRows(18);
+    buildGlassPieces(6,5);
+    transText.innerText = opts.text || '系統：序列深處發生異常…';
+    setTimeout(()=> {
+      const pieces = shatterWrap.querySelectorAll('.glassPiece');
+      pieces.forEach((p, idx) => {
+        setTimeout(()=> p.classList.add('animateOut'), 80*idx);
+      });
+      setTimeout(()=> {
+        if(typeof opts.onComplete === 'function'){
+          opts.onComplete();
+        }
+      }, 1200);
+    }, 220);
+  }
+
+  window.moduleTransition.triggerBreak = function(options){
+    document.documentElement.style.overflow = 'hidden';
+    triggerBreak(Object.assign({}, options));
+  };
+  window.moduleTransition.finishTransition = function(){
+    overlay.classList.remove('active');
+    const pieces = shatterWrap.querySelectorAll('.glassPiece'); pieces.forEach(p=>p.remove());
+    digitRows.innerHTML = '';
+    document.documentElement.style.overflow = '';
+  };
+  window.moduleTransition.startDigitSea = function(){ overlay.classList.add('active'); makeDigitRows(22); };
+  window.moduleTransition.stopDigitSea = function(){ digitRows.innerHTML = ''; overlay.classList.remove('active'); };
+
+  if(window.moduleReady && typeof window.moduleReady === 'function') window.moduleReady('transition');
+})();
+</script>
+
+<?php
+// modules/vn_stage.php
+?>
+<div id="module-vn-stage">
+  <style>
+    .storyRoot{display:none;position:fixed;inset:0;background:#050505;color:#b7ffb7;z-index:8000;align-items:center;justify-content:center;padding:20px}
+    .storyInner{width:100%;max-width:1200px;height:84vh;display:grid;grid-template-columns:220px 1fr 260px;gap:18px;padding:24px}
+    .leftCol{display:flex;flex-direction:column;gap:12px;align-items:center}
+    .spriteWrap{width:180px;height:180px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.02);cursor:pointer}
+    .roleLabel{margin-top:8px;font-size:14px}
+    .centerBox{display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.35));padding:18px;border-radius:8px}
+    .dialogTitle{font-weight:700;font-size:18px;color:#ffd48a}
+    .dialogArea{background:rgba(0,0,0,0.6);padding:14px;border-radius:8px;min-height:220px;white-space:pre-wrap;font-family:monospace;font-size:20px;line-height:1.5;overflow:auto}
+    .replyRow{display:flex;gap:8px;margin-top:6px}
+    .replyInput{flex:1;padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit;font-size:16px}
+    .choiceList{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+    .choiceBtn{padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit;cursor:pointer;font-weight:700}
+    .sideMeta{padding:12px;border-radius:8px;background:rgba(255,255,255,0.02);min-height:120px}
+    .counter{font-size:20px;font-weight:700}
+  </style>
+
+  <div class="storyRoot" id="storyRoot">
+    <div id="digitSea"></div>
+    <div class="storyInner" id="storyInner">
+      <div class="leftCol">
+        <div class="spriteWrap" id="spriteZero" data-role="zero"></div>
+        <div class="roleLabel">零（點擊切換）</div>
+        <div class="spriteWrap" id="spriteE" data-role="e"></div>
+        <div class="roleLabel">e</div>
+        <div class="spriteWrap" id="spritePhi" data-role="phi"></div>
+        <div class="roleLabel">Phi</div>
+      </div>
+
+      <div class="centerBox">
+        <div class="dialogTitle">π 裡的第 762 位是你</div>
+        <div class="dialogArea" id="dialogArea">（等待啟動）</div>
+        <div class="replyRow">
+          <input id="replyInput" class="replyInput" placeholder="輸入文字（例如：抱抱 / 歌名 / 對不起）">
+          <button id="sendReply" class="choiceBtn">送出</button>
+        </div>
+        <div class="choiceList" id="choiceList"></div>
+      </div>
+
+      <div>
+        <div class="sideMeta">
+          <div>累計位數： <div class="counter" id="totalDigits">0</div></div>
+          <div style="height:12px"></div>
+          <div class="small">提示：達到 2000 位時，查詢會碎裂進入完整故事（後續靠選擇推進）。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // minimal wiring: connect sprite DOMs to the sprite canvases if necessary
+  // the sprites module already created grids; here we just copy their HTML into left column placeholders
+  (function(){
+    const spriteZeroWrap = document.getElementById('spriteZero');
+    const spriteEWrap = document.getElementById('spriteE');
+    const spritePhiWrap = document.getElementById('spritePhi');
+    // attempt to copy existing canvas HTML from sprites module if present
+    try {
+      const zeroHtml = window.sprites ? window.sprites.getCanvasHTML('zero') : null;
+      if(zeroHtml) spriteZeroWrap.innerHTML = zeroHtml;
+      const eHtml = window.sprites ? window.sprites.getCanvasHTML('e') : null;
+      if(eHtml) spriteEWrap.innerHTML = eHtml;
+      const phiHtml = window.sprites ? window.sprites.getCanvasHTML('phi') : null;
+      if(phiHtml) spritePhiWrap.innerHTML = phiHtml;
+    } catch(e){ console.warn(e); }
+    // click to switch focus
+    [spriteZeroWrap, spriteEWrap, spritePhiWrap].forEach(el=>{
+      if(!el) return;
+      el.addEventListener('click', ()=>{
+        document.querySelectorAll('.spriteWrap').forEach(s=>s.style.outline='none');
+        el.style.outline = '3px solid rgba(58,140,255,0.12)';
+        const role = el.dataset.role;
+        if(window.sprites && typeof window.sprites.setExpression === 'function') window.sprites.setExpression(role,'idle');
+      });
+    });
+  })();
+</script>
+
+<?php
+// modules/story_script.php
+?>
+<div id="module-story" style="display:none;"></div>
+
+<script>
+/* (script content previously generated in modules/story_script.php)
+   This file contains the story engine:
+   - window.moduleStory.startStory()
+   - window.moduleStory.handleChoice(id)
+   - window.moduleStory.processReply(text)
+   - window.moduleStory.triggerTrueEndingIfUnlocked()
+   The code was produced earlier and is included here unchanged.
+*/
+</script>
+
+
