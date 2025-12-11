@@ -1,60 +1,63 @@
-<div class="row" style="margin-top:12px">
-  <div class="col" style="flex:1">
-    <div id="zeroWrap" class="spriteWrap activeBorder">
-      <div id="zeroCanvas" class="pixelCanvas"></div>
-      <div class="label">零（zero）</div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <div class="controls">
-        <div class="btnRow">
-          <button onclick="setExpression('zero','idle')">idle</button>
-          <button onclick="setExpression('zero','blink')">blink</button>
-          <button onclick="setExpression('zero','smile')">smile</button>
-          <button onclick="setExpression('zero','cry')">cry</button>
-          <button onclick="setExpression('zero','reach')">reach</button>
-        </div>
-        <div class="note">零拥有耳机、卫衣、裤鞋特征；表情含眨眼、微笑、哭、伸手。</div>
-      </div>
-    </div>
-  </div>
+<?php
+/**
+ * Section 1 — π 数据嵌入 (PHP Template 版本)
+ * 本段只建立：
+ *   - PHP 内含 π 10000 位字串
+ *   - 基础模板结构：header/body/js placeholder
+ *   - 提供 getDigit(), getRange() 等函数
+ *   - 供后续 Section 2~N 继续补写
+ */
+?>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>π 里的第 762 位是你 - PHP Template</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: monospace;
+            background: #ffffff;
+            color: #000000;
+        }
+        #app { padding: 20px; }
+    </style>
+</head>
+<body>
+<?php
+    // π 前 10000 位（不含小数点）
+    // 下方为占位，Section 2 将填入完整 10000 位
+    $PI10000 = "" .
+    "14159265358979323846264338327950288419716939937510".
+    "58209749445923078164062862089986280348253421170679".
+    "82148086513282306647093844609550582231725359408128".
+    "48111745028410270193852110555964462294895493038196"
+    // ……其余 10000 位将于下一段完整填入……
+    ;
 
-  <div class="col" style="flex:1">
-    <div id="eWrap" class="spriteWrap">
-      <div id="eCanvas" class="pixelCanvas"></div>
-      <div class="label">e（幽灵少女）</div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <div class="controls">
-        <div class="btnRow">
-          <button onclick="setExpression('e','idle')">idle</button>
-          <button onclick="setExpression('e','blink')">blink</button>
-          <button onclick="setExpression('e','smile')">smile</button>
-          <button onclick="setExpression('e','sigh')">sigh</button>
-        </div>
-        <div class="note">e 是半透明白发少女，有飘逸动画。</div>
-      </div>
-    </div>
-  </div>
+    // 取得 π 的第 n 位（1-based）
+    function getDigit($n) {
+        global $PI10000;
+        if ($n < 1 || $n > strlen($PI10000)) return null;
+        return $PI10000[$n - 1];
+    }
 
-  <div class="col" style="flex:1">
-    <div id="phiWrap" class="spriteWrap">
-      <div id="phiCanvas" class="pixelCanvas"></div>
-      <div class="label">Phi（红西装面具男）</div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <div class="controls">
-        <div class="btnRow">
-          <button onclick="setExpression('phi','idle')">idle</button>
-          <button onclick="setExpression('phi','smirk')">smirk</button>
-          <button onclick="setExpression('phi','taunt')">taunt</button>
-          <button onclick="setExpression('phi','clock')">clock</button>
-        </div>
-        <div class="note">Phi 有面具与时钟道具，表情偏戏谑/威胁表现。</div>
-      </div>
-    </div>
-  </div>
+    // 取得范围位数
+    function getRange($start, $len) {
+        global $PI10000;
+        return substr($PI10000, $start - 1, $len);
+    }
+?>
+
+<div id="app">
+    <h2>π Visual Novel — PHP Template</h2>
+    <p>目前载入：π 10000 位（占位版）。<br>下一段会补上完整版。</p>
 </div>
 
-<div style="margin-top:16px;display:flex;gap:12px;align-items:center">
-  <div class="small">当前焦点：</div><div id="currentFocus" class="small" style="font-weight:700">zero</div>
-</div>
+<script>
+// JS 也可读取 PHP 注入的 π
+const PI10000 = `<?php echo $PI10000; ?>`;
+</script>
+</body>
+</html>
