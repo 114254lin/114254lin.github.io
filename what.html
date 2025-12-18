@@ -76,7 +76,7 @@
     <!-- 小π 對話框 -->
     <div id="pi-chat" style="margin-top:14px;background:#fff7fb;border:2px solid #ff9fc7;border-radius:16px;padding:12px;">
       <div style="font-weight:700;color:#ff4f9a;margin-bottom:6px;">小π</div>
-      <div id="pi-msg" style="font-size:14px;color:#7a2f55;min-height:24px;">你好！我是小π，有什麼想查的位數嗎？</div>
+      <div id="pi-msg" style="font-size:14px;color:#7a2f55;min-height:24px;"> 我是小π，有什麼想查的位數嗎？</div>
     </div>
     <div class="footer">✨</div>
     <div class="cat" aria-hidden="true"></div>
@@ -254,7 +254,7 @@ function piRandomLine(mood){
 
 // 根據情況更新語氣
 function piUpdateMood(A){
-  if(A > 8000) piMood = 'tired';
+  if(A > 1000) piMood = 'tired';
   else if(piUseCount >= 8) piMood = 'familiar';
   else if([314, 520, 1314].includes(A)) piMood = 'happy';
   else piMood = 'normal';
@@ -401,9 +401,6 @@ function piOnQuery(){
   }
   return false;
 }
-PI_STORY.push('有些數字我其實不喜歡。');
-PI_STORY.push('它們出現得太頻繁。');
-PI_STORY.push('讓我懷疑自己是不是在原地。');
 
 </script>
 </body>
