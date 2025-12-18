@@ -190,8 +190,7 @@
   }
      piUpdateMood(A); // ★ 新增
   piSay(piRandomLine(piMood)); // ★ 新增
-    if(A === lastA){ piSay('這一位你剛剛才看過喔 🙂'); }
-    else if(A === 314159){ piSay('……你真的，很喜歡 π 呢。'); }
+    if(A === 314159){ piSay('……你真的，很喜歡 π 呢。'); }
     else if(A > 5000){ piSay('好深的位數，小π有點累，但還是算完了！'); }
     else{ piSay(`第 ${A} 位已經算好了，要不要再往後看看？`); }
     lastA = A;
