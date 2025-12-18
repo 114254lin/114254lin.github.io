@@ -253,6 +253,8 @@ document.getElementById('A').addEventListener('input', e => {
 
 // 查詢完成後，手動呼叫這個
 function piAfterQuery(A){
+  piUpdateMood(A); // ★ 新增
+  piSay(piRandomLine(piMood)); // ★ 新增
   if(A === piLastA){
     piSay('這一位你剛剛才看過喔 🙂');
   }else if(A === 314159){
@@ -263,6 +265,60 @@ function piAfterQuery(A){
     piSay(`第 ${A} 位已經算好了，要不要再往後看看？`);
   }
   piLastA = A;
+}
+// ================================
+// 小π語氣系統 + 多句庫
+// ================================
+
+// 使用次數（沿用 localStorage）
+const PI_USE_KEY = 'pi_use_count';
+let piUseCount = parseInt(localStorage.getItem(PI_USE_KEY) || '0', 10) + 1;
+localStorage.setItem(PI_USE_KEY, piUseCount);
+
+// 小π狀態
+let piMood = 'normal';
+
+// 語句資料庫（你可以一直加）
+const PI_LINES = {
+  normal: [
+    '我已經準備好了。',
+    '可以開始查詢囉。',
+    '這次想查到哪一位呢？'
+  ],
+  happy: [
+    '嘿，又見面了！',
+    '我其實滿喜歡幫你算 π 的。',
+    '這個數字選得不錯呢。'
+  ],
+  tired: [
+    '這個位數有點深，小π要慢慢來。',
+    '呼……我會算完的，放心。',
+    '數字有點多，但我撐得住。'
+    '這個位數有點深，小π要慢慢來。',
+    '我剛剛去喝了一口水。',
+    '這已經接近我平常不會算的地方了。'
+]
+
+  ],
+  familiar: [
+    '你真的很常來呢。',
+    '我已經有點記住你的習慣了。',
+    '這個位數……我好像猜得到你要做什麼。'
+  ]
+};
+
+// 隨機選一句
+function piRandomLine(mood){
+  const arr = PI_LINES[mood] || PI_LINES.normal;
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// 根據情況更新語氣
+function piUpdateMood(A){
+  if(A > 8000) piMood = 'tired';
+  else if(piUseCount >= 8) piMood = 'familiar';
+  else if([314, 520, 1314].includes(A)) piMood = 'happy';
+  else piMood = 'normal';
 }
 
 </script>
