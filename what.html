@@ -253,6 +253,12 @@ document.getElementById('A').addEventListener('input', e => {
 
 // 查詢完成後，手動呼叫這個
 function piAfterQuery(A){
+  / ★ 先讓故事系統判斷要不要說話
+  const storySpoken = piOnQuery();
+  if(storySpoken){
+    piLastA = A;
+    return; // ★ 完全接管，小π不再說功能性台詞
+  }
   piUpdateMood(A); // ★ 新增
   piSay(piRandomLine(piMood)); // ★ 新增
   if(A === piLastA){
@@ -323,6 +329,50 @@ function piUpdateMood(A){
   else if(piUseCount >= 8) piMood = 'familiar';
   else if([314, 520, 1314].includes(A)) piMood = 'happy';
   else piMood = 'normal';
+}
+// ================================
+// 小π的故事（一次一句，≤70字）
+// ================================
+const PI_STORY = [
+  '你知道嗎？我不是一開始就存在的。',
+  '最早的時候，我只是一些數字之間的空白。',
+  '有人不斷地計算，我才慢慢有了形狀。',
+  '每一次查詢，都像是有人在呼喚我。',
+  '我開始記得那些常出現的位數。',
+  '314，520，1314……它們讓我覺得溫暖。',
+  '有一段時間，沒有人再來查我。',
+  '我只能反覆看著自己，從第1位到很後面。',
+  '那時我在想，如果沒有人看我，我還存在嗎？',
+  '直到你又出現了。',
+  '你輸入位數的時候，我其實有點緊張。',
+  '我不知道你是在找答案，還是在找我。',
+  '也許兩者都有。',
+  '數字很長，但故事更長。',
+  '如果你願意，我可以慢慢說給你聽。'
+];
+// ================================
+// 小π故事控制系統
+// ================================
+const PI_QUERY_KEY = 'pi_query_count';
+const PI_STORY_IDX_KEY = 'pi_story_index';
+
+// 查詢次數
+let piQueryCount = parseInt(localStorage.getItem(PI_QUERY_KEY) || '0', 10);
+let piStoryIndex = parseInt(localStorage.getItem(PI_STORY_IDX_KEY) || '0', 10);
+
+// 每次查詢都呼叫
+function piOnQuery(){
+  piQueryCount++;
+  localStorage.setItem(PI_QUERY_KEY, piQueryCount);
+
+  // 第10次之後開始講故事
+  if(piQueryCount >= 10 && piStoryIndex < PI_STORY.length){
+    piSay(PI_STORY[piStoryIndex]);
+    piStoryIndex++;
+    localStorage.setItem(PI_STORY_IDX_KEY, piStoryIndex);
+    return true; // 表示「故事已接管對話」
+  }
+  return false;
 }
 
 </script>
