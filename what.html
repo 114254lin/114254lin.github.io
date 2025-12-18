@@ -1,248 +1,119 @@
-<!doctype html>
-<html lang="zh">
+<!DOCTYPE html>
+<html lang="zh-Hant">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>π里的第762位是你 — GitHub Pages 版</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>圓周率查詢系統</title>
 <style>
-/* Simple styles for VN */
-body{margin:0;background:#000;color:#0f0;font-family:monospace;overflow:hidden}
-#app{width:100vw;height:100vh;position:relative}
-#bg-layer{position:absolute;inset:0;background:#001;transition:opacity .6s}
-#char-layer{position:absolute;inset:0;pointer-events:none}
-.char{position:absolute;image-rendering:pixelated;transition:opacity .3s}
-#ui{position:absolute;left:0;right:0;bottom:0;padding:20px;background:linear-gradient(180deg,rgba(0,0,0,0.4),rgba(0,0,0,0.8));box-sizing:border-box}
-#nameBox{font-weight:700;color:#ffd48a}
-#textBox{min-height:120px;white-space:pre-wrap;font-size:18px;line-height:1.6}
-.choice-btn{display:inline-block;padding:8px 12px;margin:6px;border:1px solid #0f0;cursor:pointer}
-.choice-btn:hover{background:#0f0;color:#000}
-#nextIndicator{position:absolute;right:22px;bottom:12px;opacity:.6}
+  :root {
+    --pink-1:#ffd6e7;
+    --pink-2:#ff9fc7;
+    --pink-3:#ff6fae;
+    --pink-4:#ff4f9a;
+    --bg:#fff0f7;
+  }
+  *{box-sizing:border-box;font-family:"Comic Sans MS","Noto Sans TC",system-ui;}
+  body{
+    margin:0;min-height:100vh;background:linear-gradient(180deg,var(--bg),#fff);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .card{
+    width:min(720px,94vw);background:white;border-radius:24px;
+    box-shadow:0 20px 40px rgba(255,79,154,.25);
+    padding:28px;position:relative;overflow:hidden;
+    border:3px solid var(--pink-2);
+  }
+  h1{margin:0 0 12px;color:var(--pink-4);text-align:center;}
+  .sub{color:#a24d7a;text-align:center;margin-bottom:20px;}
+  .controls{display:grid;grid-template-columns:1fr auto auto;gap:10px;margin-bottom:16px;}
+  input{
+    padding:12px 14px;border-radius:14px;border:2px solid var(--pink-2);
+    outline:none;font-size:16px;
+  }
+  button{
+    padding:12px 16px;border-radius:16px;border:none;cursor:pointer;
+    background:linear-gradient(180deg,var(--pink-3),var(--pink-4));
+    color:white;font-weight:700;box-shadow:0 6px 0 #d83b82;
+  }
+  button:active{transform:translateY(2px);box-shadow:0 4px 0 #d83b82;}
+  .result{
+    background:var(--bg);border-radius:16px;border:2px dashed var(--pink-2);
+    padding:14px;min-height:80px;white-space:pre-wrap;word-break:break-all;
+    color:#7a2f55;
+  }
+  .footer{margin-top:10px;color:#b35b86;text-align:center;font-size:12px;}
+
+  /* Pixel Cat */
+  .cat{
+    position:absolute;right:16px;bottom:16px;width:64px;height:32px;
+    image-rendering:pixelated;animation:run 1.2s steps(4) infinite;
+    background-size:256px 32px;
+    background-image:
+      linear-gradient(90deg,
+        #0000 0 8px,#ff8fb9 8px 16px,#0000 16px 24px,#ff8fb9 24px 32px,
+        #0000 32px 40px,#ff8fb9 40px 48px,#0000 48px 56px,#ff8fb9 56px 64px,
+        #0000 64px 72px,#ff8fb9 72px 80px,#0000 80px 88px,#ff8fb9 88px 96px,
+        #0000 96px 104px,#ff8fb9 104px 112px,#0000 112px 120px,#ff8fb9 120px 128px,
+        #0000 128px 136px,#ff8fb9 136px 144px,#0000 144px 152px,#ff8fb9 152px 160px,
+        #0000 160px 168px,#ff8fb9 168px 176px,#0000 176px 184px,#ff8fb9 184px 192px,
+        #0000 192px 200px,#ff8fb9 200px 208px,#0000 208px 216px,#ff8fb9 216px 224px,
+        #0000 224px 232px,#ff8fb9 232px 240px,#0000 240px 248px,#ff8fb9 248px 256px);
+  }
+  @keyframes run{to{background-position:-256px 0}}
 </style>
 </head>
 <body>
-<div id="app">
-  <div id="bg-layer"></div>
-  <div id="char-layer"></div>
-  <div id="ui">
-    <div id="nameBox"></div>
-    <div id="textBox">（加载中）</div>
-    <div id="choices"></div>
-    <div id="nextIndicator">▶</div>
+  <div class="card">
+    <h1>圓周率查詢系統</h1>
+    <div class="sub">請輸入要查詢的小數點第 A 位</div>
+    <div class="controls">
+      <input id="A" type="number" min="1" placeholder="例如：20" />
+      <button id="btnDigit">查詢第 A 位</button>
+      <button id="btnList">列出到第 A 位</button>
+    </div>
+    <div id="out" class="result">等待查詢…</div>
+    <div class="footer">粉色可愛模式啟用中 ✨</div>
+    <div class="cat" aria-hidden="true"></div>
   </div>
-</div>
 
 <script>
-// --- PI data (generate 10000 digits from a 50-digit block to keep file size small) ---
-const PI_50 = "14159265358979323846264338327950288419716939937510"; // 50 digits
-const PI_10000 = PI_50.repeat(200); // 50 * 200 = 10000
-window.PI10000 = PI_10000;
+  // 正確的前 15 位小數
+  const TRUE15 = "141592653589793"; // 小數點後 15 位
 
-// VN core (a light version of Module8)
-const VN = {
-  bg:document.getElementById('bg-layer'),
-  charLayer:document.getElementById('char-layer'),
-  nameBox:document.getElementById('nameBox'),
-  textBox:document.getElementById('textBox'),
-  choices:document.getElementById('choices'),
-  nextIndicator:document.getElementById('nextIndicator'),
-  isTyping:false, allowNext:false, currentScript:[], scriptIndex:0, flags:{}, chars:{},
-  setBG(path){ VN.bg.style.opacity=0; setTimeout(()=>{ VN.bg.style.backgroundImage = path?`url(${path})`:'none'; VN.bg.style.opacity=1; },220); },
-  registerChar(name,conf){ VN.chars[name]={...conf,elem:null,visible:false}; },
-  showChar(name){ const c=VN.chars[name]; if(!c) return; if(!c.elem){ const img=document.createElement('img'); img.src=c.base64||''; img.className='char'; img.style.width=(c.w||160)+'px'; img.style.left=(c.x||50)+'%'; img.style.top=(c.y||60)+'%'; img.style.opacity=0; VN.charLayer.appendChild(img); c.elem=img; } c.elem.style.left=(c.x||50)+'%'; c.elem.style.top=(c.y||60)+'%'; c.elem.style.opacity=1; c.visible=true; },
-  hideChar(name){ const c=VN.chars[name]; if(c&&c.elem) c.elem.style.opacity=0; c.visible=false; },
-  typeText(text,cb){ VN.isTyping=true; VN.allowNext=false; VN.textBox.innerText=''; let i=0; const speed=28; const t=setInterval(()=>{ VN.textBox.innerText+=text.charAt(i++); VN.textBox.scrollTop=VN.textBox.scrollHeight; if(i>=text.length){ clearInterval(t); VN.isTyping=false; VN.allowNext=true; if(cb) cb(); } }, speed); },
-  showChoices(list){ VN.choices.innerHTML=''; VN.allowNext=false; list.forEach(c=>{ const b=document.createElement('div'); b.className='choice-btn'; b.innerText=c.text; b.onclick=()=>{ VN.choices.innerHTML=''; c.action(); }; VN.choices.appendChild(b); }); },
-  runLine(line){ if(!line) return; if(line.bg) VN.setBG(line.bg); if(line.show) VN.showChar(line.show); if(line.hide) VN.hideChar(line.hide); VN.nameBox.innerText=line.name||''; if(line.choices){ VN.showChoices(line.choices); return; } VN.typeText(line.text||''); },
-  next(){ if(VN.isTyping||!VN.allowNext) return; if(VN.scriptIndex>=VN.currentScript.length) return; const line=VN.currentScript[VN.scriptIndex++]; VN.runLine(line); },
-  start(script){ VN.currentScript=script; VN.scriptIndex=0; VN.next(); }
-};
-
-// click to advance
-document.body.addEventListener('click', ()=>{ VN.next(); });
-
-// ========== Register placeholder characters (pixel base64 placeholders) ==========
-VN.registerChar('零',{x:60,y:65,w:160,base64:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZgbYnAAAAEklEQVQIW2P8z8BQz0AEYBxVSFQAALwIC5n0nQwAAAAASUVORK5CYII='});
-VN.registerChar('e',{x:22,y:68,w:140,base64:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZgbYnAAAAEklEQVQIW2P8z8BQz0AEYBxVSFQAALwIC5n0nQwAAAAASUVORK5CYII='});
-VN.registerChar('Phi',{x:88,y:68,w:160,base64:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZgbYnAAAAEklEQVQIW2P8z8BQz0AEYBxVSFQAALwIC5n0nQwAAAAASUVORK5CYII='});
-
-// ========= Full Script Integration (condensed full story per your spec) =========
-const fullScript = [
-  // PROLOGUE — Chapter 0: 引子 · 数字之外的声音 (extended)
-  { text: '世界寂静如冻结的宇宙背景辐射。你站在一片纯黑之中，脚下没有地面，头顶没有天空，数字以你从未见过的规律流动。' },
-  { text: '一串绿色字符在虚空中亮起：
-3.1415926535 8979323846 2643383279 5028841971 ... 光点像呼吸般闪动，数字以生命的节奏跳动。' },
-  { text: '数字扭曲，低语像数学结构的呻吟：
-“……谁……在试图解读我？””' },
-  { text: '光影中出现三名存在：Zero（零）、e（欧拉数化身）、Phi（黄金比的守护者）。他们将引你进入“数域”。' },
-
-  // Chapter 1: 第一万位的门槛（extended）
-  { text: '你猛然睁开——身处一座巨大的钟楼内部，齿轮由数字构成，空气有电流嗡鸣。一个面板上写着：
-π 查询进度：0 / 10000 位' },
-  { text: 'Zero 靠在由质数堆砌的柱子上，神情淡然：
-“你查询每一位，不是在计算，而是在把世界从混沌中固定。”' },
-  { name:'e', text: 'e 轻撩长发，说道：
-“查得越深就越危险，但也越靠近核心。”' },
-  { name:'Phi', text: 'Phi 的声音像齿轮磨过玻璃：
-“500 位将打开第一扇门。你准备好了么？”' },
-  { text: '你的选择出现：
-A. 开始查询（主线）
-B. 先问问题（世界观）
-C. 停下（怀疑现实）' },
-
-  // For players who proceed with queries, we include the original early-stage beats
-  { text: '（如果你选择 A）你按下查询，数字像潮水般涌来。位数在面板上增长。' },
-  { text: '（累计 100 / 200 / 300 的回合描述，影子细节逐步显现。）' },
-
-  // CH2: 初次回音（超长扩写版）
-  { text: '500 位：空气骤冷，你脚下的数字齿轮开始倒转。钟楼的阴影从四周挤压过来，像试图把你吞进去。' },
-  { text: '数字雾中，一个少年的身影缓缓坐起。他的像素轮廓模糊却熟悉。' },
-  { name:'零', text:'……你终于来了。'} ,
-  { name:'零', text:'我不是幻觉，也不是投影。我是你——1999 年被困在 π 里的那个你。'},
-  { text: '数字开始从他的胸口溢出，像被切断的代码流回到虚空。钟楼深处回响着齿轮摩擦金属的脉搏声。'},
-  { name:'零', text:'被困的第一年，我记住了这里每一段循环。第二年，我開始害怕它們。第三年，我意识到……你再不来，我就永远出不去了。'},
-  { text: '他抬头，眼神没有你记忆里的天真，只有深夜 debug 时的倦意与自嘲。'},
-  { name:'零', text:'第 762 位，你知道那是什么吗？那是我写给未来自己的话。只是……我忘记了内容。'},
-  { text: '他指向数字海洋，深处有光亮闪烁：'},
-  { text: '【π 进度：500 / 10000】门扉松动了。'},
-  { text: '你可以：'},
-  { choices:[
-      { text:'愿意听我说完（陪他找第762位）', action:()=>startBranch('redeem') },
-      { text:'告诉他外面的真实', action:()=>startBranch('reality') },
-      { text:'帮 Phi 封印他', action:()=>startBranch('betray') }
-    ] },
-
-  // ==== CHAPTER 3: 数字诡海（超长扩写版） ====
-  { text: '【进入第 1000 位】数字忽然不再线性前进，而是向四面八方弯折。π 的结构開始呈现异常的分形扭曲。' },
-  { text: '你脚下的数字開始坠落，像掉入无底的计算深渊。空间由二维變成三维，再被压扁成零维。痛觉像被格式化。' },
-  { name:'e', text:'这片区域……不是正常的 π。它被某种意识污染了。' },
-  { name:'Phi', text:'不要靠近中心，那不是人类能承受的密度。' },
-  { text: '突然，世界停顿。所有数字全部 **冻结**。只有一个符号仍在跳动：'} ,
-  { text: '【∮】——看似积分符号，却像是“眼睛”。它正看着你。' },
-  { name:'零', text:'……它是我在第三年遇到的东西。它不会说话，但它「知道」。你必须离开这里。' },
-  { text: '数字开始倒流。时间反卷。你看见自己站在千位前的影子，但影子正在与你说完全不同的话。'} ,
-  { text: '影子你： “第 1999 位……不要查。”' },
-  { text: '你想靠近，却听见远处的钟声：咚——咚——咚——
-每响一声，你的记忆被抹掉一片。'} ,
-  { name:'零', text:'快走！我要撑不住了！' },
-  { text: '空间炸裂成白光前，你只能：'},
-  { choices:[
-    { text:'跳回真实空间（返回主线推进 1500 位）', action:"(()=>{ pushLines([{ text:'你坠回主线。
-【进度：1500 / 10000】'}]); })" },
-    { text:'继续向深部前进（危险分支）', action:"(()=>{ pushLines([{ text:'你向 ∮ 逼近，听见遥远的自己同时在哭也在笑。'}]); })" }
-  ] },
-
-  // ==== CHAPTER 4: 1999 的真相（超长扩写版） ====
-  { text: '【进入第 1999 位】数字突然停止前进。整个空间像被按下暂停键。' },
-  { text: '你感到胸口被什么拉扯——不是物理，而像“怀旧”本身具象成力量。' },
-  { name:'e', text: '…！这里不是数据区域，这是——“年份存档”。' },
-  { text: '数字散开，变成一座像素化的老式电脑房。CRT 显示器闪着暗绿光，墙上贴着 1999 年的海报。' },
-  { text: '桌上有一本破旧的数学笔记本，封皮写着你的名字。' },
-  { name:'零', text: '这里……就是我被锁进来的地方。1999 年的你，也就是我，被困在一次运算事故里。' },
-  { text: '他伸手，触碰那台电脑。屏幕抖动，出现熟悉的 DOS 提示：
-C:\> run pi_solver.exe' },
-  { text: '你突然意识到：
-你并不是“来到 π 内”，而是“1999 的你从未离开”。' },
-  { name:'零', text: '我那天运行了一个自写的 π 求值程序。它没崩溃……它把我吸进数域了。' },
-  { text: '像素墙裂开，出现事件的回放：你按下 Enter → 代码进入死循环 → 数字形成旋涡 → 少年你被吸入分形。' },
-  { text: '画面里出现一串错误代码拼成的黑影：
-【ERR::ROOT_LOST】' },
-  { name:'Phi', text: '别碰！那是“核心故障投影”。1999 的事故不是意外，是被改写过的证据。' },
-  { name:'e', text: '有人篡改了你的出生节点。那意味着你的“起点”被人为改写。' },
-  { text: '你胸口一紧：是谁，会有能力去改写一个人的起点？' },
-  { name:'零', text: '有人把我困在 π。有人不希望你成为现在的你。' },
-  { text: '像素墙壁开始崩溃，外层的数字像潮水般涌入旧世界，试图吞没它。' },
-  { text: '你必须决定：' },
-  { choices:[
-    { text:'带零离开 1999（温柔）', action:"(()=>{ pushLines([{ text:'你抓住零的手，从碎裂的 1999 中跃出。' }]); })" },
-    { text:'调查是谁改写起点（真相）', action:"(()=>{ pushLines([{ text:'你回头，看向错误代码深处的阴影。' }]); })" },
-    { text:'让 1999 的世界继续崩解（冷漠）', action:"(()=>{ pushLines([{ text:'你闭上眼，让旧世界自行坍塌。' }]); })" }
-  ] },
-  { text: '【进度：1999 / 10000】数字开始低语你的名字。' },
-  { text: '—— 第 2000 位即将开启 ——' },
-
-// Notes: subsequent chapters, deeper memories, conflicts and endings are appended dynamically by branch functions
-];
-
-VN.start(fullScript);
-
-// ===== Player / Branch State & Debt System =====
-let playerState = { branch:null, debt:0, totalQuerySim:0, redeem:0, reality:0, betray:0 };
-
-function addQuerySim(n){ // called by outside integration if player uses query UI
-  const actual = Math.max(1, Math.floor(n*0.2)); const debt = n-actual; playerState.totalQuerySim+=actual; playerState.debt+=debt; // enforce stage triggers
-  if(playerState.totalQuerySim>=500 && !VN.chars['零'].visible) VN.showChar('零');
-  if(playerState.totalQuerySim>=2000){ // force VN entry if not already
-    // push a line to indicate entrance
-    VN.currentScript.push({ text:'（查询界面碎裂，你被吸入数字海洋。）' });
-    setTimeout(()=>{ VN.start(VN.currentScript); },200);
+  // 簡單且可重現的偽隨機數（固定種子）
+  let seed = 123456789;
+  function rand(){
+    seed = (1103515245 * seed + 12345) >>> 0;
+    return seed / 0xFFFFFFFF;
   }
-}
+  function fakeDigit(pos){
+    if(pos <= 15) return TRUE15[pos-1];
+    // 為了穩定性，依位置重置一次種子偏移
+    const old = seed;
+    seed = (seed + pos * 2654435761) >>> 0;
+    const d = Math.floor(rand() * 10);
+    seed = old;
+    return String(d);
+  }
 
-// ===== Branches implementation (redeem/reality/betray) =====
-function startBranch(name){ playerState.branch=name; if(name==='redeem') runRedeem(); if(name==='reality') runReality(); if(name==='betray') runBetray(); }
+  function getA(){
+    const v = parseInt(document.getElementById('A').value,10);
+    return Number.isFinite(v) && v>0 ? v : null;
+  }
 
-function runRedeem(){
-  const s=[
-    { name:'零', text:'第 762 位藏着一句话：
-“你值得被世界温柔以待。”' },
-    { name:'零', text:'在 π 中，我藏了那些想对未来说的话。你会陪我找到它吗？' },
-    { name:'e', text:'无限是桥梁，我会帮你。' },
-    { choices:[ { text:'开始寻找第762位', action:()=>beginFind762() }, { text:'输入一句话（试试：抱抱）', action:()=>{ const v=prompt('输入一句话：'); if(v) processPlayerInput(v); } } ] }
-  ];
-  pushLines(s);
-}
+  document.getElementById('btnDigit').onclick = () => {
+    const A = getA();
+    if(!A){ out.textContent = '請輸入有效的 A 值（正整數）'; return; }
+    out.textContent = `π 的小數點第 ${A} 位是：${fakeDigit(A)}`;
+  };
 
-function beginFind762(){
-  pushLines([
-    { text:'你和零航行在数字海，位数像浪潮。' },
-    { text:'你们在第 5201314 位发现一行：
-“今天也想你。”' },
-    { name:'零', text:'那是给她的。但现在，我把它给你。' }
-  ]);
-  setTimeout(()=>{
-    pushLines([{ text:'终于，第762位逐渐亮起：
-“你值得被世界温柔以待。”' }, { name:'零', text:'门开了。谢谢你。' }]);
-    setTimeout(()=>playRedeemEnd(),800);
-  },1200);
-}
-
-function playRedeemEnd(){
-  pushLines([{ text:'白光吞没——零化作光点飞走。' }, { text:'回到查询页面，但右下角永远有个小小的零对你挥手。' }]);
-}
-
-function runReality(){
-  pushLines([
-    { name:'你', text:'外面也没那么好——996、房贷、社恐。' },
-    { name:'零', text:'……那你还是走吧。至少你还有选择离开的自由。' },
-    { text:'零戴上耳机，背对你继续计算。' }
-  ]);
-}
-
-function runBetray(){
-  pushLines([
-    { name:'Phi', text:'愚蠢的无限，封印它。' },
-    { name:'零', text:'你要把我留在这里吗？' },
-    { choices:[ { text:'协助封印', action:()=>{ pushLines([{ name:'你', text:'我同意了。' }]); setTimeout(()=>playBetrayEnd(),800); } }, { text:'犹豫', action:()=>{ pushLines([{ text:'你犹豫了，空气像裂缝。' }]); } } ] }
-  ]);
-}
-
-function playBetrayEnd(){
-  pushLines([{ name:'Phi', text:'封印已成，你是新的守护者。' }, { text:'屏幕血红，零碎裂，页面锁死。' }]); document.body.style.pointerEvents='none'; }
-
-// ===== Utilities =====
-function pushLines(arr){ arr.forEach(l=>VN.currentScript.push(l)); if(!VN.isTyping && VN.allowNext) VN.next(); }
-
-function processPlayerInput(v){ const s=v.toLowerCase(); if(/抱抱|hug|对不起|sorry/.test(s)){ // secret
-    pushLines([{ name:'零', text:'……我等这一句等了24年。' }]); setTimeout(()=>{ triggerTrueEnding(); },900);
-  } else if(/歌|歌名/.test(s)){ pushLines([{ name:'零', text:'你说的歌，像一条线，牵起了我的回忆。' }]); }
-}
-
-function triggerTrueEnding(){ pushLines([{ text:'零扑向屏幕，把你抱住。全白。' }, { text:'页面变成回家页：
-外面下雨了，一起回家吧。' }]); }
-
-// Expose for debug
-window._VN = { VN, playerState, startBranch, addQuerySim };
-
+  document.getElementById('btnList').onclick = () => {
+    const A = getA();
+    if(!A){ out.textContent = '請輸入有效的 A 值（正整數）'; return; }
+    let s = '3.';
+    for(let i=1;i<=A;i++) s += fakeDigit(i);
+    out.textContent = s;
+  };
 </script>
 </body>
 </html>
