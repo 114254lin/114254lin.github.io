@@ -77,6 +77,29 @@
     <div id="hint" style="color:#b35b86;font-size:12px;margin-bottom:8px;"></div>
 
     <div id="out" class="result">等待查詢…</div>
+    <!-- 小π 對話框 -->
+<div id="pi-chat" style="
+  margin-top:14px;
+  background:#fff7fb;
+  border:2px solid #ff9fc7;
+  border-radius:16px;
+  padding:12px;
+">
+  <div style="
+    font-weight:700;
+    color:#ff4f9a;
+    margin-bottom:6px;
+  ">小π</div>
+
+  <div id="pi-msg" style="
+    font-size:14px;
+    color:#7a2f55;
+    min-height:24px;
+  ">
+    你好！我是小π，有什麼想查的位數嗎？
+  </div>
+</div>
+
     <div class="footer"> ✨</div>
     <div class="cat" aria-hidden="true"></div>
   </div>
@@ -139,7 +162,8 @@
     const A = getA();
     if(!A){ out.textContent = '請輸入有效的 A 值（正整數）'; return; }
     withLoading(()=>{
-      out.textContent = `π 的小數點第 ${A} 位是：${fakeDigit(A)}`;
+      out.textContent = `π 的小數點第 ${A} 位是：${fakeDigit(A)}`;piAfterQuery(A);
+
       checkEasterEgg(A);
     });
   };
@@ -205,6 +229,41 @@ document.getElementById('A').addEventListener('input', e => {
   else if(v < 1000) hint.textContent = '標準精度計算中';
   else hint.textContent = '高精度模式（可能需要較長時間）';
 });
+// ================================
+// 小π 對話系統（獨立模組）
+// ================================
+const piMsg = document.getElementById('pi-msg');
+let piLastA = null;
+
+function piSay(text){
+  if(piMsg) piMsg.textContent = text;
+}
+
+// 使用者輸入 A 時的反應
+document.getElementById('A').addEventListener('input', e => {
+  const v = parseInt(e.target.value, 10);
+  if(!v){
+    piSay('想知道 π 的哪一位呢？');
+    return;
+  }
+  if(v < 10) piSay('很前面的位數呢，很快就能算出來！');
+  else if(v < 1000) piSay('這個位數剛剛好，我會幫你看仔細一點。');
+  else piSay('哇，是很後面的位數，小π要專心一下了…');
+});
+
+// 查詢完成後，手動呼叫這個
+function piAfterQuery(A){
+  if(A === piLastA){
+    piSay('這一位你剛剛才看過喔 🙂');
+  }else if(A === 314159){
+    piSay('……你真的，很喜歡 π 呢。');
+  }else if(A > 5000){
+    piSay('好深的位數，小π有點累，但還是算完了！');
+  }else{
+    piSay(`第 ${A} 位已經算好了，要不要再往後看看？`);
+  }
+  piLastA = A;
+}
 
 </script>
 
