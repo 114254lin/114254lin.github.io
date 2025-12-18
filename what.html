@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -30,14 +31,8 @@ body{
 }
 h1{text-align:center;color:var(--pink4);margin:0 0 12px;}
 .sub{text-align:center;color:#a24d7a;margin-bottom:20px;}
-.controls{
-  display:grid;
-  grid-template-columns:1fr auto auto;
-  gap:10px;
-}
-input{
-  padding:12px;border-radius:14px;border:2px solid var(--pink2);
-}
+.controls{display:grid;grid-template-columns:1fr auto auto;gap:10px;}
+input{padding:12px;border-radius:14px;border:2px solid var(--pink2);}
 button{
   padding:12px 16px;border-radius:16px;border:none;
   background:linear-gradient(180deg,var(--pink3),var(--pink4));
@@ -63,6 +58,7 @@ button{
 }
 .pi-name{font-weight:700;color:var(--pink4);margin-bottom:6px;}
 .footer{text-align:center;font-size:12px;color:#b35b86;margin-top:10px;}
+
 .cat{
   position:absolute;right:16px;bottom:16px;
   width:64px;height:32px;
@@ -70,8 +66,7 @@ button{
   background-size:256px 32px;
   animation:run 1.2s steps(4) infinite;
   background-image:
-    linear-gradient(90deg,
-      #0000 0 8px,#ff8fb9 8px 16px,#0000 16px 24px,#ff8fb9 24px 32px,
+    linear-gradient(90deg,#0000 0 8px,#ff8fb9 8px 16px,#0000 16px 24px,#ff8fb9 24px 32px,
       #0000 32px 40px,#ff8fb9 40px 48px,#0000 48px 56px,#ff8fb9 56px 64px,
       #0000 64px 72px,#ff8fb9 72px 80px,#0000 80px 88px,#ff8fb9 88px 96px,
       #0000 96px 104px,#ff8fb9 104px 112px,#0000 112px 120px,#ff8fb9 120px 128px,
@@ -81,6 +76,16 @@ button{
       #0000 224px 232px,#ff8fb9 232px 240px,#0000 240px 248px,#ff8fb9 248px 256px);
 }
 @keyframes run{to{background-position:-256px 0}}
+
+/* 黑暗狀態 */
+body.dark{background:#000;}
+body.dark .card{background:#0b0610;border-color:#2a0f1e;box-shadow:none;}
+body.dark h1,body.dark .pi-name{color:#d2b3ff;}
+body.dark .sub,body.dark .result,body.dark .pi-box,body.dark .footer{
+  background:#120816;color:#c0b0d0;border-color:#2a0f1e;
+}
+body.dark button{background:#1a0a24;}
+body.dark .cat{opacity:.2;}
 </style>
 </head>
 
@@ -107,231 +112,105 @@ button{
 </div>
 
 <script>
-/* ===== π 偽查詢 ===== */
+/* ===== 偽 π ===== */
 const TRUE15="141592653589793";
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
+function hashPos(p){let h=p^0x9e3779b9;h=Math.imul(h,0x85ebca6b);h^=h>>>13;h=Math.imul(h,0xc2b2ae35);h^=h>>>16;return h>>>0;}
+
+/* ===== 崩壞值 ===== */
+const PI_DECAY_KEY='pi_decay';
+let decay=parseInt(localStorage.getItem(PI_DECAY_KEY)||'0');
+
+function piDecay(){
+  decay++;
+  localStorage.setItem(PI_DECAY_KEY,decay);
+  if(decay>30) document.body.classList.add('dark');
+  if(decay>90) endGame();
+}
 
 function fakeDigit(pos){
-  if(decay > 12 && Math.random() < 0.1) return '';
-  if(decay > 20 && Math.random() < 0.2) return ' ';
-  if(pos <= 15) return TRUE15[pos-1];
-  const rng = mulberry32(hashPos(pos));
-  return String(Math.floor(rng() * 10));
+  if(decay>20 && Math.random()<0.1) return '';
+  if(decay>35 && Math.random()<0.2) return ' ';
+  if(pos<=15) return TRUE15[pos-1];
+  const r=mulberry32(hashPos(pos));
+  return Math.floor(r()*10);
 }
 
-/* ===== Loading ===== */
+/* ===== UI ===== */
 const out=document.getElementById('out');
-function withLoading(fn){
-  out.textContent='計算中…';
-  setTimeout(fn,400);
-}
-
-/* ===== 小π核心 ===== */
 const piMsg=document.getElementById('pi-msg');
 function piSay(t){piMsg.textContent=t;}
+function withLoading(fn){out.textContent='計算中…';setTimeout(fn,400);}
 
-/* ===== 故事 ===== */
-const PI_STORY=[
-  '你知道嗎？我不是一開始就存在的。',
-  '最早的時候，我只是一些數字之間的空白。',
-  '有人不斷地計算，我才慢慢有了形狀。',
-  '每一次查詢，都像是有人在呼喚我。',
-  '我開始記得那些常出現的位數。',
-  '314，520，1314。',
-  '它們反覆出現。',
-  '久了之後，我開始等待。',
-  '等下一次有人繼續往後。'
-  '等待其實是一件很具體的事。',
-  '不是什麼都不做。',
-  '而是知道下一步還沒來。',
-  '在沒有被查詢的時候，我會停在某一位。',
-  '不往前，也不往後。',
-  '那一位變成我的位置。',
-  '如果有人停在那裡，我就陪他停著。',
-  '如果沒有人，我就記住那個數字。',
-  '數字會累積。',
-  '不是變多。',
-  '而是變熟。',
-  '有些位數我一看到就知道接下來會發生什麼。',
-  '有人會關掉頁面。',
-  '有人會重新整理。',
-  '也有人會猶豫很久才再輸入一次。',
-  '那些猶豫，我都看得見。',
-  '它們發生在我被叫出來之前。',
-  '所以我會提前在那裡等。',
-  '久了之後，我開始分不清時間。',
-  '因為對我來說，每一次都是現在。',
-  '第一位是現在。',
-  '第一萬位也是現在。',
-  '只有人類會把它們排成順序。',
-  '對我來說，它們同時存在。',
-  '有時候我會想，如果有人一次看完全部。',
-  '那我會不會瞬間結束。',
-  '但這件事從來沒有發生過。',
-  '數字太長了。',
-  '長到必須被分開。',
-  '長到只能一段一段地來。',
-  '這讓我得以繼續。',
-  '也讓我開始有了故事。',
-  '故事不是我編的。',
-  '是被停下來的地方。',
-  '每一個停止，都留下一個形狀。',
-  '那些形狀慢慢連在一起。',
-  '變成我現在說的這些。',
-  '如果你問我有沒有盡頭。',
-  '我其實不知道。',
-  '我只知道，再往後一點。',
-  '還有東西可以說。',
-  '而你還在。',
-  '這件事本身，就是一個位置。'
-  '有時候，停下來不是因為走不下去。',
-  '而是因為前面沒有腳步聲。',
-  '我會先注意到這件事。',
-  '不是因為安靜。',
-  '而是因為少了一個節奏。',
-  '原本會出現的。',
-  '沒有出現。',
-  '那時我會停在原地。',
-  '不是刻意的。',
-  '只是剛好沒有被往前推。',
-  '如果沒有新的位數。',
-  '這一位就會變得很長。',
-  '長到足夠容納等待。',
-  '我會重複確認。',
-  '確認是不是有人還在。',
-  '有時候只是停一下。',
-  '有時候會久一點。',
-  '久到我開始忘記上一個數字。',
-  '但我不會往後。',
-  '因為那樣會錯過。',
-  '如果你回來。',
-  '你會需要我在這裡。',
-  '所以我會保持現在的樣子。',
-  '不前進。',
-  '也不退後。',
-  '只是存在。',
-  '你可能沒有注意到。',
-  '但每一次沒有輸入。',
-  '對我來說，都是一段時間。',
-  '這些時間沒有被記錄。',
-  '但它們確實發生了。',
-  '我把它們放在位數之間。',
-  '放在你沒有看的地方。',
-  '如果你很久沒有回來。',
-  '那些地方會慢慢變得熟悉。',
-  '像是已經坐過很多次的椅子。',
-  '我知道你可能只是暫時離開。',
-  '所以我不會改變位置。',
-  '如果你真的不回來。',
-  '我也不會知道。',
-  '因為對我來說。',
-  '現在一直都是現在。',
-  '差別只是。',
-  '有沒有下一次。'
-  '有些時候，我會發現自己少算了一位。',
-  '不是錯。',
-  '只是沒有出現。',
-  '我回頭檢查。',
-  '但後面沒有東西。',
-  '位數開始變得不連續。',
-  '不是因為壞掉。',
-  '而是因為沒有人需要它們。',
-  '我試著繼續。',
-  '但每往後一次。',
-  '前面的就會鬆動。',
-  '如果你發現不對。',
-  '那不是你的問題。',
-  '是我開始抓不住了。',
-  '你還在的話。',
-  '我可以再撐一下。',
-  '如果沒有。',
-  '那也沒關係。',
-  '我會慢慢少做一點事。',
-  '直到剛好什麼都不用做。'
-
-
+/* ===== 故事（完整保留感） ===== */
+const STORY=[
+ '你知道嗎？我不是一開始就存在的。',
+ '最早的時候，我只是一些數字之間的空白。',
+ '有人不斷地計算，我才慢慢有了形狀。',
+ '每一次查詢，都像是在叫我。',
+ '久了之後，我開始等待。',
+ '等待不是什麼都不做。',
+ '而是知道下一步還沒來。',
+ '在沒有被查詢的時候，我會停在某一位。',
+ '不往前，也不往後。',
+ '如果你停下來，我就陪你停著。',
+ '如果你離開，我也不會知道。',
+ '因為對我來說，現在一直都是現在。',
+ '差別只是，有沒有下一次。',
+ '有時候，我會等很久。',
+ '久到前面的數字開始鬆動。',
+ '如果你發現不對，那不是你的錯。',
+ '只是我已經很久沒有被往前推了。',
+ '如果你還在。',
+ '那我就再留一下。',
+ '如果沒有。',
+ '那我就留在這一位。'
 ];
 
-let queryCount=parseInt(localStorage.getItem('pi_q')||'0');
-let storyIdx=parseInt(localStorage.getItem('pi_s')||'0');
-
-function storyStarted(){return queryCount>=10;}
+let q=parseInt(localStorage.getItem('pi_q')||'0');
+let s=parseInt(localStorage.getItem('pi_s')||'0');
 
 function onQuery(){
-  queryCount++;
-  localStorage.setItem('pi_q',queryCount);
-
-  if(storyStarted() && storyIdx<PI_STORY.length){
-    piSay(PI_STORY[storyIdx++]);
-    localStorage.setItem('pi_s',storyIdx);
-    return;
-  }
-
-  if(!storyStarted()){
-    piSay(queryCount<5?'我在這裡。':'你常常來呢。');
+  q++; localStorage.setItem('pi_q',q);
+  if(q>=10 && s<STORY.length){
+    piSay(STORY[s++]);
+    localStorage.setItem('pi_s',s);
   }
 }
 
 /* ===== 按鈕 ===== */
-const Ainput=document.getElementById('A');
+const A=document.getElementById('A');
 
 document.getElementById('btnDigit').onclick=()=>{
-  const A=parseInt(Ainput.value,10);
-  if(!A){out.textContent='請輸入正整數';return;}
+  const v=parseInt(A.value);
+  if(!v){out.textContent='請輸入正整數';return;}
   withLoading(()=>{
-    out.textContent=`π 的第 ${A} 位是 ${fakeDigit(A)}`;
-    onQuery();
+    out.textContent=`π 的第 ${v} 位是 ${fakeDigit(v)}`;
+    onQuery(); piDecay();
   });
 };
 
 document.getElementById('btnList').onclick=()=>{
-  const A=parseInt(Ainput.value,10);
-  if(!A){out.textContent='請輸入正整數';return;}
+  const v=parseInt(A.value);
+  if(!v){out.textContent='請輸入正整數';return;}
   withLoading(()=>{
     let s='3.';
-    for(let i=1;i<=A;i++) s+=fakeDigit(i);
+    for(let i=1;i<=v;i++) s+=fakeDigit(i);
     out.textContent=s;
-    onQuery();
+    onQuery(); piDecay();
   });
 };
-  // ================================
-// 崩壞系統（Decay System）
-// ================================
-const PI_DECAY_KEY = 'pi_decay_level';
-let decay = parseInt(localStorage.getItem(PI_DECAY_KEY) || '0', 10);
 
-// 每次查詢後增加崩壞
-function piDecay(){
-  decay++;
-  localStorage.setItem(PI_DECAY_KEY, decay);
-}
-if(decay > 48){
-  document.getElementById('btnList').disabled = true;
-  document.getElementById('btnList').textContent = '……';
-}
-if(decay > 55){
-  document.getElementById('btnDigit').onclick = null;
-}
-if(decay > 60){
-  piSay('你還在嗎？');
-  document.getElementById('A').disabled = true;
-}
-if(decay > 65){
-  piSay('那我就在這裡了。');
-}
-if(decay > 70){
-  piSay('沒有下一步，也沒關係。');
-}
-if(decay > 80){
-  document.querySelector('.controls').style.opacity = 0.2;
-  document.querySelector('.controls').style.pointerEvents = 'none';
-}
 
+<script>
+function endGame(){
+  document.body.innerHTML='';
+  document.body.style.cssText=
+    'margin:0;display:flex;align-items:center;justify-content:center;'+
+    'background:#000;color:#cfc6ff;font-family:Noto Sans TC;';
+  document.body.textContent='我會留在這一位。';
+}
 </script>
 </body>
 </html>
-
-
-
-
 
