@@ -201,6 +201,13 @@ document.getElementById('btnList').onclick=()=>{
   });
 };
 
+// ===== 開發用重置（按住 Shift 點標題）=====
+document.querySelector('h1').onclick = (e)=>{
+  if(e.shiftKey){
+    localStorage.clear();
+    location.reload();
+  }
+};
 
 <script>
 function endGame(){
