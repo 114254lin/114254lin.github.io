@@ -60,6 +60,9 @@
         #0000 224px 232px,#ff8fb9 232px 240px,#0000 240px 248px,#ff8fb9 248px 256px);
   }
   @keyframes run{to{background-position:-256px 0}}
+  .cat.fast { animation-duration: .6s; }
+.cat.tired { animation: none; opacity: .6; }
+
 </style>
 </head>
 <body>
@@ -71,6 +74,8 @@
       <button id="btnDigit">查詢第 A 位</button>
       <button id="btnList">列出到第 A 位</button>
     </div>
+    <div id="hint" style="color:#b35b86;font-size:12px;margin-bottom:8px;"></div>
+
     <div id="out" class="result">等待查詢…</div>
     <div class="footer">粉色可愛模式啟用中 ✨</div>
     <div class="cat" aria-hidden="true"></div>
@@ -159,7 +164,52 @@
       document.querySelector('.card').appendChild(note);
     }
   }
+  // --- 使用次數記憶 ---
+(function(){
+  const key = 'pi_visit_count';
+  let c = parseInt(localStorage.getItem(key) || '0', 10);
+  c++;
+  localStorage.setItem(key, c);
+
+  const footer = document.querySelector('.footer');
+  if(footer){
+    footer.textContent = `歡迎回來，這是你第 ${c} 次使用圓周率查詢系統`;
+  }
+})();
+// --- 貓貓互動 ---
+const cat = document.querySelector('.cat');
+
+function catRunFast(){
+  cat.classList.remove('tired');
+  cat.classList.add('fast');
+  setTimeout(()=>cat.classList.remove('fast'), 1500);
+}
+
+function catTired(){
+  cat.classList.remove('fast');
+  cat.classList.add('tired');
+}
+
+// 在查詢完成時呼叫
+function afterQuery(A){
+  if(A > 5000) catTired();
+  else catRunFast();
+}
+// --- 即時輸入提示 ---
+const hint = document.getElementById('hint');
+document.getElementById('A').addEventListener('input', e => {
+  const v = parseInt(e.target.value, 10);
+  if(!v){ hint.textContent = ''; return; }
+
+  if(v < 20) hint.textContent = '快速查詢模式';
+  else if(v < 1000) hint.textContent = '標準精度計算中';
+  else hint.textContent = '高精度模式（可能需要較長時間）';
+});
+
 </script>
+
+  
+
 </body>
 </html>
 
