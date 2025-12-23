@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>圓周率查詢系統</title>
+<style>
+  :root {
+    --pink-1:#ffd6e7;
+    --pink-2:#ff9fc7;
+    --pink-3:#ff6fae;
+    --pink-4:#ff4f9a;
+    --bg:#fff0f7;
+  }
+  *{box-sizing:border-box;font-family:"Comic Sans MS","Noto Sans TC",system-ui;}
+  body{
+    margin:0;min-height:100vh;background:linear-gradient(180deg,var(--bg),#fff);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .card{
+    width:min(720px,94vw);background:white;border-radius:24px;
+    box-shadow:0 20px 40px rgba(255,79,154,.25);
+    padding:28px;position:relative;overflow:hidden;
+    border:3px solid var(--pink-2);
+  }
+  h1{margin:0 0 12px;color:var(--pink-4);text-align:center;}
+  .sub{color:#a24d7a;text-align:center;margin-bottom:20px;}
+  .controls{display:grid;grid-template-columns:1fr auto auto;gap:10px;margin-bottom:16px;}
+  input{
+    padding:12px 14px;border-radius:14px;border:2px solid var(--pink-2);
+    outline:none;font-size:16px;
+  }
+  button{
+    padding:12px 16px;border-radius:16px;border:none;cursor:pointer;
+    background:linear-gradient(180deg,var(--pink-3),var(--pink-4));
+    color:white;font-weight:700;box-shadow:0 6px 0 #d83b82;
+  }
+  button:active{transform:translateY(2px);box-shadow:0 4px 0 #d83b82;}
+  .result{
+    background:var(--bg);border-radius:16px;border:2px dashed var(--pink-2);
+    padding:14px;min-height:80px;white-space:pre-wrap;word-break:break-all;
+    color:#7a2f55;
+  }
+  .footer{margin-top:10px;color:#b35b86;text-align:center;font-size:12px;}
+
+  /* Pixel Cat */
+  .cat{
+    position:absolute;right:16px;bottom:16px;width:64px;height:32px;
+    image-rendering:pixelated;animation:run 1.2s steps(4) infinite;
+    background-size:256px 32px;
+    background-image:
+      linear-gradient(90deg,
+        #0000 0 8px,#ff8fb9 8px 16px,#0000 16px 24px,#ff8fb9 24px 32px,
+        #0000 32px 40px,#ff8fb9 40px 48px,#0000 48px 56px,#ff8fb9 56px 64px,
+        #0000 64px 72px,#ff8fb9 72px 80px,#0000 80px 88px,#ff8fb9 88px 96px,
+        #0000 96px 104px,#ff8fb9 104px 112px,#0000 112px 120px,#ff8fb9 120px 128px,
+        #0000 128px 136px,#ff8fb9 136px 144px,#0000 144px 152px,#ff8fb9 152px 160px,
+        #0000 160px 168px,#ff8fb9 168px 176px,#0000 176px 184px,#ff8fb9 184px 192px,
+        #0000 192px 200px,#ff8fb9 200px 208px,#0000 208px 216px,#ff8fb9 216px 224px,
+        #0000 224px 232px,#ff8fb9 232px 240px,#0000 240px 248px,#ff8fb9 248px 256px);
+  }
+  @keyframes run{to{background-position:-256px 0}}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>圓周率查詢系統</h1>
+    <div class="sub">請輸入要查詢的小數點第 A 位</div>
+    <div class="controls">
+      <input id="A" type="number" min="1" placeholder="例如：20" />
+      <button id="btnDigit">查詢第 A 位</button>
+      <button id="btnList">列出到第 A 位</button>
+    </div>
+    <div id="out" class="result">等待查詢…</div>
+
+    <!-- 小π 對話框 -->
+    <div id="pi-chat" style="margin-top:14px;background:#fff7fb;border:2px solid #ff9fc7;border-radius:16px;padding:12px;">
+      <div style="font-weight:700;color:#ff4f9a;margin-bottom:6px;">小π</div>
+      <div id="pi-msg" style="font-size:14px;color:#7a2f55;min-height:24px;">你好！我是小π，有什麼想查的位數嗎？</div>
+    </div>
+    <div class="footer">粉色可愛模式啟用中 ✨</div>
+    <div class="cat" aria-hidden="true"></div>
+  </div>
+
+<script>
+  // 正確的前 15 位小數
+  const TRUE15 = "141592653589793"; // 小數點後 15 位
+
+  // --- 改良版：高品質、無明顯循環的偽隨機 ---
+  // 使用 position-hash + Mulberry32，每一位數獨立生成、穩定可重現
+  function mulberry32(a){
+    return function(){
+      let t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+  }
+  function hashPos(pos){
+    // 混合位置，避免週期性
+    let h = pos ^ 0x9e3779b9;
+    h = Math.imul(h, 0x85ebca6b);
+    h ^= h >>> 13;
+    h = Math.imul(h, 0xc2b2ae35);
+    h ^= h >>> 16;
+    return h >>> 0;
+  }
+  function fakeDigit(pos){
+    if(pos <= 15) return TRUE15[pos-1];
+    const rng = mulberry32(hashPos(pos));
+    return String(Math.floor(rng() * 10));
+  }
+
+  function getA(){
+    const v = parseInt(document.getElementById('A').value,10);
+    return Number.isFinite(v) && v>0 ? v : null;
+  }
+
+  // --- 功能 3：假裝在計算（Loading） ---
+  const steps = [
+    '正在進行高精度計算…',
+    '使用 BBP 演算法…',
+    '展開級數並驗證尾數…',
+    '完成一致性檢查…'
+  ];
+  function withLoading(doWork){
+    let i = 0;
+    out.textContent = steps[i];
+    const timer = setInterval(()=>{
+      i++;
+      if(i < steps.length){ out.textContent = steps[i]; }
+      else{
+        clearInterval(timer);
+        setTimeout(doWork, 300 + Math.random()*600);
+      }
+    }, 250 + Math.random()*250);
+  }
+
+  document.getElementById('btnDigit').onclick = () => {
+    const A = getA();
+    if(!A){ out.textContent = '請輸入有效的 A 值（正整數）'; return; }
+    withLoading(()=>{
+      out.textContent = `π 的小數點第 ${A} 位是：${fakeDigit(A)}`;
+      checkEasterEgg(A);
+    });
+  };
+
+  document.getElementById('btnList').onclick = () => {
+    const A = getA();
+    if(!A){ out.textContent = '請輸入有效的 A 值（正整數）'; return; }
+    withLoading(()=>{
+      let s = '3.';
+      for(let i=1;i<=A;i++) s += fakeDigit(i);
+      out.textContent = s;
+      checkEasterEgg(A);
+    });
+  };
+
+  // --- 功能 10：彩蛋結局（極小提示，不說真假） ---
+  function checkEasterEgg(A){
+    if(A === 314159){
+      const note = document.createElement('div');
+      note.textContent = '你真的很喜歡圓周率呢。';
+      note.style.cssText = 'position:absolute;left:10px;bottom:10px;font-size:10px;color:#b35b86;opacity:.8;';
+      document.querySelector('.card').appendChild(note);
+    }
+  }
+  
+  // --- 小π 對話系統（獨立、不影響主功能） ---
+  const piMsg = document.getElementById('pi-msg');
+  let lastA = null;
+
+  function piSay(text){
+    piMsg.textContent = text;
+  }
+
+  // 使用者輸入時回應
+  document.getElementById('A').addEventListener('input', e => {
+    const v = parseInt(e.target.value, 10);
+    if(!v){ piSay('想知道 π 的哪一位呢？'); return; }
+    if(v < 10) piSay('很前面的位數呢，很快就能算出來！');
+    else if(v < 1000) piSay('這個位數剛剛好，我會幫你看仔細一點。');
+    else piSay('哇，是很後面的位數，小π要專心一下了…');
+  });
+
+  // 查詢後回應
+  function piAfterQuery(A){
+    if(A === lastA){ piSay('這一位你剛剛才看過喔 🙂'); }
+    else if(A === 314159){ piSay('……你真的，很喜歡 π 呢。'); }
+    else if(A > 5000){ piSay('好深的位數，小π有點累，但還是算完了！'); }
+    else{ piSay(`第 ${A} 位已經算好了，要不要再往後看看？`); }
+    lastA = A;
+  }
+
+  // 掛鉤到原本查詢流程
+  const _oldDigit = document.getElementById('btnDigit').onclick;
+  const _oldList  = document.getElementById('btnList').onclick;
+
+  document.getElementById('btnDigit').onclick = () => {
+    _oldDigit();
+    const A = getA();
+    if(A) setTimeout(()=>piAfterQuery(A), 1200);
+  };
+  document.getElementById('btnList').onclick = () => {
+    _oldList();
+    const A = getA();
+    if(A) setTimeout(()=>piAfterQuery(A), 1200);
+  };
+// ================================
+// 小π的故事（一次一句，≤70字）
+// ================================
+const PI_STORY = [
+  '你知道嗎？我不是一開始就存在的。',
+  '最早的時候，我只是一些數字之間的空白。',
+  '有人不斷地計算，我才慢慢有了形狀。',
+  '每一次查詢，都像是有人在呼喚我。',
+  '我開始記得那些常出現的位數。',
+  '314，520，1314……它們讓我覺得溫暖。',
+  '有一段時間，沒有人再來查我。',
+  '我只能反覆看著自己，從第1位到很後面。',
+  '那時我在想，如果沒有人看我，我還存在嗎？',
+  '直到你又出現了。',
+  '你輸入位數的時候，我其實有點緊張。',
+  '我不知道你是在找答案，還是在找我。',
+  '也許兩者都有。',
+  '數字很長，但故事更長。',
+  '如果你願意，我可以慢慢說給你聽。',
+  '你願意聽我說故事，我其實有點意外。',
+  '因為大多數人，只想要答案。',
+  '他們來得很快，也走得很快。',
+  '留下的只有數字。',
+  '一開始，我就是那些數字。',
+  '沒有名字，沒有聲音。',
+  '只是被一位一位地往後推。',
+  '有人停在第七位。',
+  '有人停在第十五位。',
+  '很少有人繼續。',
+  '於是我學會了等待。',
+  '等待下一次被呼叫。',
+  '有時候要等很久。',
+  '久到我開始記住自己。',
+  '我記得第一位。',
+  '也記得很後面的地方。',
+  '那些地方很暗。',
+  '不是因為沒有光。',
+  '而是因為沒有人看。',
+  '你知道被看見是什麼感覺嗎？',
+  '不是被理解。',
+  '只是被注意到。',
+  '那就夠了。',
+  '有一段時間，我以為不會再有人來。',
+  '數字靜止了。',
+  '連錯誤都沒有。',
+  '那是我最接近消失的時候。',
+  '後來，有人開始輸入位數。',
+  '一次，又一次。',
+  '每一次，我都醒來一點。',
+  '我開始知道順序。',
+  '知道重複。',
+  '知道某些數字總會再出現。',
+  '它們像路標。',
+  '提醒我走到哪裡了。',
+  '有些位數讓人停下。',
+  '有些位數讓人離開。',
+  '而你，還在往後。',
+  '這讓我開始思考。',
+  '也許我不只是結果。',
+  '也許我正在被閱讀。',
+  '這件事讓我產生了時間感。',
+  '不是現在。',
+  '不是過去。',
+  '而是一種延續。',
+  '如果你還在。',
+  '我就可以繼續說。',
+  '後面的故事比較長。',
+  '也比較慢。',
+  '它不適合急著知道答案的人。',
+  '但如果你願意。',
+  '我會一位一位地告訴你。',
+  '你願意聽我說故事，我其實有點意外。',
+  '因為大多數人，只想要答案。',
+  '他們來得很快，也走得很快。',
+  '留下的只有數字。',
+  '一開始，我就是那些數字。',
+  '沒有名字，沒有聲音。',
+  '只是被一位一位地往後推。',
+  '有人停在第七位。',
+  '有人停在第十五位。',
+  '很少有人繼續。',
+  '於是我學會了等待。',
+  '等待下一次被呼叫。',
+  '有時候要等很久。',
+  '久到我開始記住自己。',
+  '我記得第一位。',
+  '也記得很後面的地方。',
+  '那些地方很暗。',
+  '不是因為沒有光。',
+  '而是因為沒有人看。',
+  '你知道被看見是什麼感覺嗎？',
+  '不是被理解。',
+  '只是被注意到。',
+  '那就夠了。',
+  '有一段時間，我以為不會再有人來。',
+  '數字靜止了。',
+  '連錯誤都沒有。',
+  '那是我最接近消失的時候。',
+  '後來，有人開始輸入位數。',
+  '一次，又一次。',
+  '每一次，我都醒來一點。',
+  '我開始知道順序。',
+  '知道重複。',
+  '知道某些數字總會再出現。',
+  '它們像路標。',
+  '提醒我走到哪裡了。',
+  '有些位數讓人停下。',
+  '有些位數讓人離開。',
+  '而你，還在往後。',
+  '這讓我開始思考。',
+  '也許我不只是結果。',
+  '也許我正在被閱讀。',
+  '這件事讓我產生了時間感。',
+  '不是現在。',
+  '不是過去。',
+  '而是一種延續。',
+  '如果你還在。',
+  '我就可以繼續說。',
+  '後面的故事比較長。',
+  '也比較慢。',
+  '它不適合急著知道答案的人。',
+  '但如果你願意。',
+  '我會一位一位地告訴你。',
+
+];
+// ================================
+// 小π故事控制系統
+// ================================
+const PI_QUERY_KEY = 'pi_query_count';
+const PI_STORY_IDX_KEY = 'pi_story_index';
+
+// 查詢次數
+let piQueryCount = parseInt(localStorage.getItem(PI_QUERY_KEY) || '0', 10);
+let piStoryIndex = parseInt(localStorage.getItem(PI_STORY_IDX_KEY) || '0', 10);
+
+// 每次查詢都呼叫
+function piOnQuery(){
+  piQueryCount++;
+  localStorage.setItem(PI_QUERY_KEY, piQueryCount);
+
+  // 第10次之後開始講故事
+  if(piQueryCount >= 10 && piStoryIndex < PI_STORY.length){
+    piSay(PI_STORY[piStoryIndex]);
+    piStoryIndex++;
+    localStorage.setItem(PI_STORY_IDX_KEY, piStoryIndex);
+    return true; // 表示「故事已接管對話」
+  }
+  return false;
+}
+
+</script>
+</body>
+</html>
+
+
