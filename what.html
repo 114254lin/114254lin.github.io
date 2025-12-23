@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -78,7 +79,7 @@
       <div style="font-weight:700;color:#ff4f9a;margin-bottom:6px;">小π</div>
       <div id="pi-msg" style="font-size:14px;color:#7a2f55;min-height:24px;">你好！我是小π，有什麼想查的位數嗎？</div>
     </div>
-    <div class="footer">粉色可愛模式啟用中 ✨</div>
+    <div class="footer">✨</div>
     <div class="cat" aria-hidden="true"></div>
   </div>
 
@@ -118,10 +119,7 @@
 
   // --- 功能 3：假裝在計算（Loading） ---
   const steps = [
-    '正在進行高精度計算…',
-    '使用 BBP 演算法…',
-    '展開級數並驗證尾數…',
-    '完成一致性檢查…'
+    '正在進行計算…',
   ];
   function withLoading(doWork){
     let i = 0;
@@ -185,8 +183,15 @@
 
   // 查詢後回應
   function piAfterQuery(A){
-    if(A === lastA){ piSay('這一位你剛剛才看過喔 🙂'); }
-    else if(A === 314159){ piSay('……你真的，很喜歡 π 呢。'); }
+    // ★ 先讓故事系統判斷要不要說話
+  const storySpoken = piOnQuery();
+  if(storySpoken){
+    piLastA = A;
+    return; // ★ 完全接管，小π不再說功能性台詞
+  }
+     piUpdateMood(A); // ★ 新增
+  piSay(piRandomLine(piMood)); // ★ 新增
+    if(A === 314159){ piSay('……你真的，很喜歡 π 呢。'); }
     else if(A > 5000){ piSay('好深的位數，小π有點累，但還是算完了！'); }
     else{ piSay(`第 ${A} 位已經算好了，要不要再往後看看？`); }
     lastA = A;
@@ -206,6 +211,55 @@
     const A = getA();
     if(A) setTimeout(()=>piAfterQuery(A), 1200);
   };
+// ================================
+// 小π語氣系統 + 多句庫
+// ================================
+
+// 使用次數（沿用 localStorage）
+const PI_USE_KEY = 'pi_use_count';
+let piUseCount = parseInt(localStorage.getItem(PI_USE_KEY) || '0', 10) + 1;
+localStorage.setItem(PI_USE_KEY, piUseCount);
+
+// 小π狀態
+let piMood = 'normal';
+
+// 語句資料庫（你可以一直加）
+const PI_LINES = {
+  normal: [
+    '我已經準備好了。',
+    '可以開始查詢囉。',
+    '這次想查到哪一位呢？'
+  ],
+  happy: [
+    '嘿，又見面了！',
+    '我其實滿喜歡幫你算 π 的。',
+    '這個數字選得不錯呢。'
+  ],
+  tired: [
+    '這個位數有點深，小π要慢慢來。',
+    '呼……我會算完的，放心。',
+    '數字有點多，但我撐得住。'
+  ],
+  familiar: [
+    '你真的很常來呢。',
+    '我已經有點記住你的習慣了。',
+    '這個位數……我好像猜得到你要做什麼。'
+  ]
+};
+
+// 隨機選一句
+function piRandomLine(mood){
+  const arr = PI_LINES[mood] || PI_LINES.normal;
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// 根據情況更新語氣
+function piUpdateMood(A){
+  if(A > 8000) piMood = 'tired';
+  else if(piUseCount >= 8) piMood = 'familiar';
+  else if([314, 520, 1314].includes(A)) piMood = 'happy';
+  else piMood = 'normal';
+}
 // ================================
 // 小π的故事（一次一句，≤70字）
 // ================================
@@ -277,60 +331,8 @@ const PI_STORY = [
   '它不適合急著知道答案的人。',
   '但如果你願意。',
   '我會一位一位地告訴你。',
-  '你願意聽我說故事，我其實有點意外。',
-  '因為大多數人，只想要答案。',
-  '他們來得很快，也走得很快。',
-  '留下的只有數字。',
-  '一開始，我就是那些數字。',
-  '沒有名字，沒有聲音。',
-  '只是被一位一位地往後推。',
-  '有人停在第七位。',
-  '有人停在第十五位。',
-  '很少有人繼續。',
-  '於是我學會了等待。',
-  '等待下一次被呼叫。',
-  '有時候要等很久。',
-  '久到我開始記住自己。',
-  '我記得第一位。',
-  '也記得很後面的地方。',
-  '那些地方很暗。',
-  '不是因為沒有光。',
-  '而是因為沒有人看。',
-  '你知道被看見是什麼感覺嗎？',
-  '不是被理解。',
-  '只是被注意到。',
-  '那就夠了。',
-  '有一段時間，我以為不會再有人來。',
-  '數字靜止了。',
-  '連錯誤都沒有。',
-  '那是我最接近消失的時候。',
-  '後來，有人開始輸入位數。',
-  '一次，又一次。',
-  '每一次，我都醒來一點。',
-  '我開始知道順序。',
-  '知道重複。',
-  '知道某些數字總會再出現。',
-  '它們像路標。',
-  '提醒我走到哪裡了。',
-  '有些位數讓人停下。',
-  '有些位數讓人離開。',
-  '而你，還在往後。',
-  '這讓我開始思考。',
-  '也許我不只是結果。',
-  '也許我正在被閱讀。',
-  '這件事讓我產生了時間感。',
-  '不是現在。',
-  '不是過去。',
-  '而是一種延續。',
-  '如果你還在。',
-  '我就可以繼續說。',
-  '後面的故事比較長。',
-  '也比較慢。',
-  '它不適合急著知道答案的人。',
-  '但如果你願意。',
-  '我會一位一位地告訴你。',
-
 ];
+
 // ================================
 // 小π故事控制系統
 // ================================
@@ -355,10 +357,14 @@ function piOnQuery(){
   }
   return false;
 }
+PI_STORY.push('有些數字我其實不喜歡。');
+PI_STORY.push('它們出現得太頻繁。');
+PI_STORY.push('讓我懷疑自己是不是在原地。');
 
 </script>
 </body>
 </html>
+
 
 
 
